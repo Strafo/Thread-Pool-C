@@ -1,4 +1,4 @@
-/** 
+/**
  * @file linklist.h
  * @author Andrea Guzzo
  * @date 22/09/2013
@@ -39,7 +39,7 @@ typedef struct _linked_list_s linked_list_t;
 
 
 /********************************************************************
- * Common API 
+ * Common API
  ********************************************************************/
 
 /* List creation and destruction routines */
@@ -96,8 +96,15 @@ void list_lock(linked_list_t *list);
  */
 void list_unlock(linked_list_t *list);
 
+
+/**
+ * @brief Get the refercence of the list lock
+ * @param list: A valid pointer to a linke_list_t structure
+ */
+pthread_mutex_t* get_lock_reference(linked_list_t *list);
+
 /********************************************************************
- * Value-based API 
+ * Value-based API
  ********************************************************************/
 
 
@@ -194,7 +201,7 @@ void *list_fetch_value(linked_list_t *list, size_t pos);
  * @param srcPos : The actual position of the value we want to move
  * @param dstPos : The new position where to move the value to
  * @return : 0 if success, -1 otherwise
- */ 
+ */
 int list_move_value(linked_list_t *list, size_t srcPos, size_t dstPos);
 
 /**
@@ -223,21 +230,21 @@ typedef int (*item_handler_t)(void *item, size_t idx, void *user);
 int list_foreach_value(linked_list_t *list, item_handler_t item_handler, void *user);
 
 /********************************************************************
- * Tag-based API 
+ * Tag-based API
  ********************************************************************/
 
 /**
  * @brief Tagged Value
  *
- * This structure represent a tagged_value_t and is the main datatype 
- * you will have to handle when workin with the tagged-based api. 
+ * This structure represent a tagged_value_t and is the main datatype
+ * you will have to handle when workin with the tagged-based api.
  * If user extract such structure from the list (removing it from the list)
  * then he MUST release its resources trough a call to destroy_tagged_value
  * when finished using it.
- * If a new tagged_value must be created and inserted in a list, then 
- * list_create_tagged_value() should be used to allocate resources and obtain 
+ * If a new tagged_value must be created and inserted in a list, then
+ * list_create_tagged_value() should be used to allocate resources and obtain
  * a pointer to a tagged_value_t structure.
- */ 
+ */
 typedef struct _tagged_value_s {
     char *tag;
     void *value;
@@ -269,8 +276,8 @@ tagged_value_t *list_create_tagged_value(char *tag, void *val, size_t len);
  * @param val : The value
  * @return A newly created tagged value with the provided tag and value
  *
- * Only the tag will be copied, the value will just point 
- * to the provided value without it being copied 
+ * Only the tag will be copied, the value will just point
+ * to the provided value without it being copied
  */
 tagged_value_t *list_create_tagged_value_nocopy(char *tag, void *val);
 
@@ -346,7 +353,7 @@ tagged_value_t *list_pick_tagged_value(linked_list_t *list, size_t pos);
  * @param pos : The position (offset) of the requested tagged value
  * @return : The tagged value stored at pos if any, NULL otherwise
  *
- * Note this is a read-write access and the tagged value will be removed from 
+ * Note this is a read-write access and the tagged value will be removed from
  * the list before returning it.
  * The tagged value will not be released
  */
@@ -367,9 +374,9 @@ tagged_value_t *list_get_tagged_value(linked_list_t *list, char *tag);
  *        contains values with the same tag, the first occurrence will be replaced with the new value
  *        (but still at the same index in the list)
  * @param list: The list used as value
- * @param tval: The new tagged value to insert to the list 
+ * @param tval: The new tagged value to insert to the list
  * @return The previous tagged_value_t matching the given tag if any; NULL otherwise
- * @note If a tagged value with the same tag is already contained in the list, 
+ * @note If a tagged value with the same tag is already contained in the list,
  *       this function will replace the old tagged_value_t structure with the
  *       new one preserving the position in the list.\n
  *       If no matching tagged_value_t structure is found, then the new one
@@ -382,7 +389,7 @@ tagged_value_t *list_set_tagged_value(linked_list_t *list, char *tag, void *valu
  * @brief Get all value pointers for all tagged values matching a specific tag
  * @param list : A valid pointer to a linked_list_t structure holding tagged values
  * @param tag  : The tag of the values we are looking for
- * @param values : a valid pointer to a linked_list_t structure where to put the 
+ * @param values : a valid pointer to a linked_list_t structure where to put the
  *               value pointers held by the tagged_value_t items matching the provided tag
  * @return The number of tagged values matching the tag and added to the values linked list
  *
@@ -402,7 +409,7 @@ void list_sort(linked_list_t *list, list_comparator_callback_t comparator);
 
 
 /********************************************************************
- * Slice API 
+ * Slice API
  ********************************************************************/
 
 typedef struct  _slice_s slice_t;

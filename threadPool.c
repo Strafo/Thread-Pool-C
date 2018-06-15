@@ -5,11 +5,13 @@
 struct _future
 {
 	void* result;
-	bool isReady;
+	int isReady;
 	pthread_mutex_t mutex;
+	pthread_cond_t ready;
 };
 struct _threadPool
 {
+	pthread_cond_t job_is_empty;
 	pthread_t* threadList;
 	linked_list_t* jobsList;
 	int nThread;
@@ -22,57 +24,64 @@ typedef struct _job
 {
 	const pthread_attr_t *attr;
 	void *arg;
-	future_t future;
+	future_t* future;
 
 	void* (*start_routine)(void*);
-}* job_t;
+} job_t;
 
-void destroy_thread_pool(thread_pool_t threadPool);
-void shut_down(thread_pool_t tp);
-void shut_down_now(thread_pool_t tp);
-void destroy_thread_pool(thread_pool_t threadPool);
-inline future_t create_future(void);
+void destroy_thread_pool(thread_pool_t* threadPool);
+void shut_down(thread_pool_t* tp);
+void shut_down_now(thread_pool_t* tp);
+void destroy_thread_pool(thread_pool_t* threadPool);
+inline future_t* create_future(void);
 inline struct _job *create_job(void );
-void destroy_future(future_t future );
+void destroy_future(future_t* future );
 void destroy_job_future(struct _job *job );
 void destroy_job(struct _job *job );
 inline void mutex_lock(pthread_mutex_t *mutex);
 inline void mutex_unlock(pthread_mutex_t *mutex);
 void* thread_wrapper(void* tp);
-bool is_ready(future_t future);
-void* future_get(future_t future);
-job_t init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg);
+int is_ready(future_t* future);
+void* future_get(future_t* future);
+struct _job* init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg);
 
 
-thread_pool_t create_thread_pool(int numberOfExecutors){
-	thread_pool_t tp=(thread_pool_t)malloc(sizeof(struct _threadPool));
+thread_pool_t* create_fixed_size_thread_pool(int numberOfExecutors){
+	thread_pool_t* tp=(thread_pool_t*)malloc(sizeof(struct _threadPool));
 	if(!tp){
-		debug(stdin,"ERROR:Unable to create threadPool\n");
+		debug(stderr,"ERROR:Unable to create threadPool\n");
 		return NULL;
 	}
 	tp->threadList=(pthread_t*)malloc(sizeof( pthread_t)*numberOfExecutors);
-	if(!tp){
-		debug(stdin,"ERROR:Unable to create threadList\n");
+	if(!tp->threadList){
+		debug(stderr,"ERROR:Unable to create threadList\n");
 		free(tp);
 		return NULL;
 	}
 	tp->jobsList=list_create();
 	if(!tp->jobsList){
-		debug(stdin,"ERROR:Unable to create jobsList\n");
+		debug(stderr,"ERROR:Unable to create jobsList\n");
+		free(tp->threadList);
+		free(tp);
+		return NULL;
+	}
+	if(pthread_cond_init(&(tp->job_is_empty),NULL)!=0){
+		debug(stderr,"ERROR:Unable to create condition var threadPool\n");
+		list_destroy(tp->jobsList);
 		free(tp->threadList);
 		free(tp);
 		return NULL;
 	}
 	tp->nThread=numberOfExecutors;
 	tp->active=RUNNING;
-return tp;
+	return tp;
 }
 
 
 
-future_t add_job_tail(thread_pool_t tp,const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg){
-	future_t future;
-	struct _job* job=init_job(attr,start_routine,arg);
+future_t* add_job_tail(thread_pool_t* tp,const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg){
+	future_t* future;
+	job_t* job=init_job(attr,start_routine,arg);
 	if(!job){
 		return NULL;
 	}
@@ -84,13 +93,14 @@ future_t add_job_tail(thread_pool_t tp,const pthread_attr_t *attr,void *(*start_
 		destroy_job_future(job);
 		return NULL;
 	}
-return future;
+	pthread_cond_broadcast(&(tp->job_is_empty));//broadcast -->lost wakeup problem
+	return future;
 }
 
 
-future_t add_job_head(thread_pool_t tp,const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg){
-	future_t future;
-	struct _job* job=init_job(attr,start_routine,arg);
+future_t* add_job_head(thread_pool_t* tp,const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg){
+	future_t* future;
+	job_t* job=init_job(attr,start_routine,arg);
 	if(!job){
 		return NULL;
 	}
@@ -102,14 +112,15 @@ future_t add_job_head(thread_pool_t tp,const pthread_attr_t *attr,void *(*start_
 		destroy_job_future(job);
 		return NULL;
 	}
-return future;
+	pthread_cond_broadcast(&(tp->job_is_empty));//lost wakeup problem
+	return future;
 }
 
-job_t init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg){
-	future_t future=create_future();
+job_t* init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg){
+	future_t* future=create_future();
 	if(!future){return NULL;}
 
-	struct _job* job=create_job();
+	job_t* job=create_job();
 	if(!job){
 		destroy_future(future);
 		return NULL;
@@ -119,15 +130,15 @@ job_t init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *ar
 	job->arg=arg;
 	job->attr=attr;
 	job->start_routine=start_routine;
-return job;
+	return job;
 }
 
 
 
 
 
-future_t create_future(void ){
-	future_t future=(future_t)malloc(sizeof(struct _future));
+future_t* create_future(void ){
+	future_t* future=(future_t*)malloc(sizeof(struct _future));
 	if(!future){
 		debug(stderr,"ERROR: creating future\n");
 		return NULL;
@@ -137,12 +148,18 @@ future_t create_future(void ){
 		free(future);
 		return NULL;
 	}
-	future->isReady=false;
-return future;
+	if(pthread_cond_init(&(future->ready),NULL)!=0){
+		debug(stderr,"ERROR:Unable to create condition var for future struct\n");
+		pthread_mutex_destroy(&(future->mutex));
+		free(future);
+		return NULL;
+	}
+	future->isReady=0;
+	return future;
 }
 
-struct _job* create_job(void ){
-	struct _job* job=(struct _job*)malloc(sizeof(struct _job));
+job_t* create_job(void ){
+	job_t* job=(struct _job*)malloc(sizeof(struct _job));
 	if(!job){
 		debug(stderr,"ERROR: creating _job\n");
 		return NULL;
@@ -151,61 +168,67 @@ struct _job* create_job(void ){
 	}
 }
 
-void destroy_future(future_t future ){
+void destroy_future(future_t* future ){
 	if(!future)return;
 	pthread_mutex_destroy(&(future->mutex));
+	pthread_cond_destroy(&(future->ready));
 	free(future);
 }
 
-void destroy_job_future(struct _job* job ){
+void destroy_job_future(job_t* job ){
 	if(!job)return;
 	destroy_future(job->future);
 	free(job);
 }
 
-void destroy_job(struct _job* job ){
+void destroy_job(job_t* job ){
 	free(job);
 }
 
 
-void start_thread_pool(thread_pool_t tp){
+void start_thread_pool(thread_pool_t* tp,const pthread_attr_t *attr){
 	if(!tp){debug(stderr,"Illegal argument tp\n");return;}
 	for(int i=0;i<tp->nThread;i++){
-		if(pthread_create(&(tp->threadList[i]),NULL,thread_wrapper,(void*)tp)!=0){
+		if(pthread_create(&(tp->threadList[i]),attr,thread_wrapper,(void*)tp)!=0){
 			debug(stderr,"ERROR: creating thread\n");
 			return;
 		}
 	}
-return;
 }
 
 
-//TODO USE VAR CONDITION TO AVOID SPINLOCK
 
 void* thread_wrapper(void* arg){
-	thread_pool_t tp=(thread_pool_t)arg;
+	thread_pool_t* tp=(thread_pool_t*)arg;
 	struct _job* my_job;
 	void* result;
 	void* (*foo)(void*);
 	debug(stderr,"thread wrapper is running\n");
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-  while(tp->active==RUNNING)
-  {
-	while((my_job=(struct _job*)list_fetch_value(tp->jobsList,0))==NULL){
-		if(tp->active==STOPPING)return NULL;
+
+	while(tp->active==RUNNING)
+	{
+
+		list_lock(tp->jobsList);
+		while((my_job=(job_t*)list_fetch_value(tp->jobsList,0))==NULL){
+			pthread_cond_wait(&(tp->job_is_empty),get_lock_reference(tp->jobsList));
+			if(tp->active==STOPPING){return NULL;}
+		}
+		list_unlock(tp->jobsList);
+
+		foo=my_job->start_routine;
+
+		result=foo(my_job->arg);
+
+		mutex_lock(&(my_job->future->mutex) );
+		my_job->future->isReady=1;
+		my_job->future->result=result;
+		mutex_unlock(&(my_job->future->mutex) );
+		pthread_cond_broadcast(&(my_job->future->ready));//broadcast -->lost wakeup problem
+		destroy_job(my_job);
+
 	}
-	foo=my_job->start_routine;
-
-	result=foo(my_job->arg);
-
-	mutex_lock(&(my_job->future->mutex) );
-	my_job->future->isReady=true;
-	my_job->future->result=result;
-	mutex_unlock(&(my_job->future->mutex) );
-	destroy_job(my_job);
-	
-  }
-  return NULL;
+	return NULL;
 }
 
 
@@ -235,7 +258,6 @@ void mutex_lock(pthread_mutex_t *mutex){
 				break;
 		}
 	}
-	return;
 }
 
 void mutex_unlock(pthread_mutex_t *mutex){
@@ -247,53 +269,53 @@ void mutex_unlock(pthread_mutex_t *mutex){
 			case EPERM:
 				debug(stderr,"ERROR releasing mutex EAGAIN\n");
 				break;
-			
+
 			default:
 				debug(stderr,"ERROR releasing mutex \n");
 				break;
 		}
 	}
-	return;
 }
 
-bool is_ready(future_t future){
-	bool ir;
+int is_ready(future_t* future){
+	int ir;
 	mutex_lock(&(future->mutex));
 	ir=future->isReady;
 	mutex_unlock(&(future->mutex));
 	return ir;
 }
 
-//TODO AVOID SPINLOCK-->pthreadJOIN
-void* future_get(future_t future){
-	bool ir=false;
+void* future_get(future_t* future){
+	int ir;
 	void* res;
-	while(!ir){
-		mutex_lock(&(future->mutex));
-		ir=future->isReady;
-		mutex_unlock(&(future->mutex));
+	mutex_lock(&(future->mutex));
+	while((ir=future->isReady)==0){
+		pthread_cond_wait(&(future->ready),&(future->mutex));
 	}
+	mutex_unlock(&(future->mutex));
 	res=future->result;
 	destroy_future(future);
 	return  res;
 }
 
 
-void destroy_now_thread_pool(thread_pool_t threadPool){
+void destroy_thread_pool(thread_pool_t* threadPool){
 	if(!threadPool)return;
 	shut_down_now(threadPool);
+	pthread_cond_destroy(&(threadPool->job_is_empty));
 	list_destroy(threadPool ->jobsList);
 	free(threadPool ->threadList);
 	free(threadPool);
 }
 
 
-void shut_down(thread_pool_t tp){
+void shut_down(thread_pool_t* tp){
 	if(!tp)return;
 	tp->active=STOPPING;
+
 }
 
-void shut_down_now(thread_pool_t tp){
+void shut_down_now(thread_pool_t* tp){
 
 	if(!tp)return;
 	tp->active=STOPPING;
@@ -301,16 +323,4 @@ void shut_down_now(thread_pool_t tp){
 		pthread_cancel(tp->threadList[i]);
 	}
 
-}
-
-
-void destroy_thread_pool(thread_pool_t tp){
-	if(!tp)return;
-	shut_down(tp);
-	for(int i=0;i<tp->nThread;i++){
-		pthread_join(tp->threadList[i],NULL);
-	}
-	list_destroy(tp ->jobsList);
-	free(tp ->threadList);
-	free(tp);
 }

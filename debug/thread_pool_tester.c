@@ -10,7 +10,7 @@ void* add(void* counter) {
 	pthread_mutex_lock(&mutex);
 	(*ptr)++;
 	pthread_mutex_unlock(&mutex);
-    return counter ;
+	return counter ;
 }
 
 int main(){
@@ -18,10 +18,10 @@ int main(){
 	int nthread=4;
 	int njobs=1000000;
 	int* result;
-	future_t res[njobs];
+	future_t* res[njobs];
 
-	thread_pool_t tp=create_thread_pool(nthread);
-	start_thread_pool(tp);
+	thread_pool_t* tp=create_fixed_size_thread_pool(nthread);
+	start_thread_pool(tp,NULL);
 
 	for(int i=0;i<njobs;i++)
 		//res[i]=add_job_tail(tp,NULL,add,&counter);
@@ -32,11 +32,8 @@ int main(){
 		printf("%d\n",*result);
 	}
 	printf("result::%d\n",counter );
-	
 
-	for(int i=0;i<njobs;i++){
-		destroy_future(res[i]);
-	}
+
 	destroy_thread_pool(tp);
 	printf("END\n");
 }
