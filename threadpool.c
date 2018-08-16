@@ -1,11 +1,18 @@
 #include"threadpool.h"
-#define RUNNING 0
-#define STOPPING -1
+//gestione thread pool
+const int THREAD_POOL_RUNNING=1;
+const int THREAD_POOL_STOP=0;
+
+
+/*gestione future*/
+const int FUTURE_READY=1;
+const int FUTURE_UNREADY=0;
+
 
 struct _future
 {
 	void* result;
-	int isReady;
+	int is_ready;
 	pthread_mutex_t mutex;
 	pthread_cond_t ready;
 };
@@ -25,37 +32,39 @@ typedef struct _job
 	const pthread_attr_t *attr;
 	void *arg;
 	future_t* future;
-
 	void* (*start_routine)(void*);
+
 } job_t;
 
 
 
-
 thread_pool_t* create_fixed_size_thread_pool(int size);
-void destroy_thread_pool(thread_pool_t* threadPool);
-
-
-
-
-
-void shut_down(thread_pool_t* tp);
-void shut_down_now(thread_pool_t* tp);
-void destroy_thread_pool(thread_pool_t* threadPool);
 inline future_t* create_future(void);
 inline struct _job *create_job(void );
+
+
+void shut_down_now(thread_pool_t* thread_pool);
+void shut_down(thread_pool_t* thread_pool);
+struct _job* init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg);
+
+
+void destroy_thread_pool(thread_pool_t* thread_pool);
 void destroy_future(future_t* future );
-void destroy_job_future(struct _job *job );
 void destroy_job(struct _job *job );
+void destroy_job_future(struct _job *job );
+
+
+
+
 inline void mutex_lock(pthread_mutex_t *mutex);
 inline void mutex_unlock(pthread_mutex_t *mutex);
 void* thread_wrapper(void* tp);
 int is_ready(future_t* future);
 void* future_get(future_t* future);
-struct _job* init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg);
 
 
-thread_pool_t* create_fixed_size_thread_pool(int size){
+
+thread_pool_t* create_fixed_size_thread_pool(int size){//todo add pthread_setcancelstate
 	thread_pool_t* tp=(thread_pool_t*)malloc(sizeof(struct _thread_pool));
 	if(!tp){
 		return NULL;
@@ -79,6 +88,156 @@ thread_pool_t* create_fixed_size_thread_pool(int size){
 	tp->state=RUNNING;  //todo check  creare delle macro un pò più belle
 	return tp;
 }
+
+
+void destroy_thread_pool(thread_pool_t* thread_pool){
+
+    if(!threadPool)return;
+    shut_down_now(thread_pool);
+
+
+
+    pthread_cond_destroy(&(thread_pool->job_is_empty));//todo check
+
+    list_destroy(threadPool ->jobs_list);
+    free(thread_pool ->thread_list);
+    free(thread_pool);
+}
+
+
+void shut_down_now(thread_pool_t* tp){
+    if(!tp)return;
+    tp->state=THREAD_POOL_STOP;
+    for(int i=0;i<tp->nThread;i++){
+        pthread_cancel(tp->threadList[i]);
+    }
+
+}
+
+
+void shut_down(thread_pool_t* tp){
+    if(!tp)return;
+    tp->active=THREAD_POOL_STOP;
+}
+
+
+
+
+job_t* init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg){
+    job->future=create_future();
+    if(!job->future){return NULL;}
+
+    job_t* job=create_job();
+    if(!job){
+        destroy_future(future);
+        return NULL;
+    }
+    //INIT _JOB
+    job->arg=arg;
+    job->attr=attr;
+    job->start_routine=start_routine;
+    return job;
+}
+
+
+
+
+future_t* create_future(void ){
+    future_t* future=(future_t*)malloc(sizeof(struct _future));
+    if(!future){
+        return NULL;
+    }
+    if(pthread_mutex_init(&(future->mutex),NULL)!=0){//todo check
+        //todo destroy future
+        return NULL;
+    }
+    if(pthread_cond_init(&(future->ready),NULL)!=0){//todo check
+        //todo destroy future
+        return NULL;
+    }
+    future->is_ready=FUTURE_UNREADY;
+    return future;
+}
+
+job_t* create_job(void ){
+    return (struct _job*)malloc(sizeof(struct _job));
+}
+
+
+
+
+
+
+void destroy_future(future_t* future ){//todo gli facciamo restituire l'errore?
+    int result;
+    if(!future)return;
+    result=pthread_mutex_destroy(&(future->mutex));
+    switch(result)
+    {
+        case EBUSY:
+            //todo
+            break;
+        case EINVAL:
+            //todo
+            break;
+    }
+    result=pthread_cond_destroy(&(future->ready));
+    switch(result)
+    {
+        case EBUSY:
+            //todo
+            break;
+        case EINVAL:
+            //todo
+            break;
+    }
+    free(future);
+}
+
+
+void destroy_job(job_t* job ){
+    //todo devo fare la free su attr?
+    free(job);
+}
+
+
+
+
+void destroy_job_and_future(job_t* job ){
+    if(!job)return;
+    destroy_future(job->future);//todo prendere il risultato
+    free(job);
+}
+
+
+/*
+
+typedef struct _job
+{
+    const pthread_attr_t *attr;
+    void *arg;
+    future_t* future;
+    void* (*start_routine)(void*);
+
+} job_t;
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -119,74 +278,12 @@ future_t* add_job_head(thread_pool_t* tp,const pthread_attr_t *attr,void *(*star
 	return future;
 }
 
-job_t* init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg){
-	future_t* future=create_future();
-	if(!future){return NULL;}
-
-	job_t* job=create_job();
-	if(!job){
-		destroy_future(future);
-		return NULL;
-	}
-	//INIT _JOB
-	job->future=future;
-	job->arg=arg;
-	job->attr=attr;
-	job->start_routine=start_routine;
-	return job;
-}
 
 
 
 
 
-future_t* create_future(void ){
-	future_t* future=(future_t*)malloc(sizeof(struct _future));
-	if(!future){
-		debug(stderr,"ERROR: creating future\n");
-		return NULL;
-	}
-	if(pthread_mutex_init(&(future->mutex),NULL)!=0){
-		debug(stderr,"ERROR: creating future(init mutex)\n");
-		free(future);
-		return NULL;
-	}
-	if(pthread_cond_init(&(future->ready),NULL)!=0){
-		debug(stderr,"ERROR:Unable to create condition var for future struct\n");
-		pthread_mutex_destroy(&(future->mutex));
-		free(future);
-		return NULL;
-	}
-	future->isReady=0;
-	return future;
-}
 
-job_t* create_job(void ){
-	job_t* job=(struct _job*)malloc(sizeof(struct _job));
-	if(!job){
-		debug(stderr,"ERROR: creating _job\n");
-		return NULL;
-	}else{
-		return job;
-	}
-}
-
-void destroy_future(future_t* future ){
-	if(!future)return;
-	pthread_mutex_destroy(&(future->mutex));
-	pthread_cond_destroy(&(future->ready));
-	free(future);
-}
-
-void destroy_job_future(job_t* job ){
-	if(!job)return;
-	destroy_future(job->future);
-	free(job);
-}
-
-void destroy_job(job_t* job ){
-	free(job);
-}
 
 
 void start_thread_pool(thread_pool_t* tp,const pthread_attr_t *attr){
@@ -302,28 +399,4 @@ void* future_get(future_t* future){
 }
 
 
-void destroy_thread_pool(thread_pool_t* threadPool){
-	if(!threadPool)return;
-	shut_down_now(threadPool);
-	pthread_cond_destroy(&(threadPool->job_is_empty));
-	list_destroy(threadPool ->jobsList);
-	free(threadPool ->threadList);
-	free(threadPool);
-}
 
-
-void shut_down(thread_pool_t* tp){
-	if(!tp)return;
-	tp->active=STOPPING;
-
-}
-
-void shut_down_now(thread_pool_t* tp){
-
-	if(!tp)return;
-	tp->active=STOPPING;
-	for(int i=0;i<tp->nThread;i++){
-		pthread_cancel(tp->threadList[i]);
-	}
-
-}
