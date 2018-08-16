@@ -9,13 +9,13 @@ struct _future
 	pthread_mutex_t mutex;
 	pthread_cond_t ready;
 };
-struct _threadPool
+struct _thread_pool
 {
 	pthread_cond_t job_is_empty;
-	pthread_t* threadList;
-	linked_list_t* jobsList;
-	int nThread;
-	int active;
+	pthread_t* thread_list;
+	linked_list_t* jobs_list;
+	int n_thread;
+	int state;
 };
 
 
@@ -29,7 +29,16 @@ typedef struct _job
 	void* (*start_routine)(void*);
 } job_t;
 
+
+
+
+thread_pool_t* create_fixed_size_thread_pool(int size);
 void destroy_thread_pool(thread_pool_t* threadPool);
+
+
+
+
+
 void shut_down(thread_pool_t* tp);
 void shut_down_now(thread_pool_t* tp);
 void destroy_thread_pool(thread_pool_t* threadPool);
@@ -46,34 +55,28 @@ void* future_get(future_t* future);
 struct _job* init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg);
 
 
-thread_pool_t* create_fixed_size_thread_pool(int numberOfExecutors){
-	thread_pool_t* tp=(thread_pool_t*)malloc(sizeof(struct _threadPool));
+thread_pool_t* create_fixed_size_thread_pool(int size){
+	thread_pool_t* tp=(thread_pool_t*)malloc(sizeof(struct _thread_pool));
 	if(!tp){
-		debug(stderr,"ERROR:Unable to create threadPool\n");
 		return NULL;
 	}
 	tp->threadList=(pthread_t*)malloc(sizeof( pthread_t)*numberOfExecutors);
-	if(!tp->threadList){
-		debug(stderr,"ERROR:Unable to create threadList\n");
-		free(tp);
+	if(!tp->thread_list){
+
+		//todo destroy threadpool (dealloccare la memoria)
 		return NULL;
 	}
-	tp->jobsList=list_create();
+	tp->jobs_list=list_create();
 	if(!tp->jobsList){
-		debug(stderr,"ERROR:Unable to create jobsList\n");
-		free(tp->threadList);
-		free(tp);
+		//todo destroy threadpool (dealloccare la memoria)
 		return NULL;
 	}
-	if(pthread_cond_init(&(tp->job_is_empty),NULL)!=0){
-		debug(stderr,"ERROR:Unable to create condition var threadPool\n");
-		list_destroy(tp->jobsList);
-		free(tp->threadList);
-		free(tp);
+	if(pthread_cond_init(&(tp->job_is_empty),NULL)!=0){   //todo check this part
+		//todo destroy threadpool (dealloccare la memoria)
 		return NULL;
 	}
-	tp->nThread=numberOfExecutors;
-	tp->active=RUNNING;
+	tp->n_thread=size;
+	tp->state=RUNNING;  //todo check  creare delle macro un pò più belle
 	return tp;
 }
 

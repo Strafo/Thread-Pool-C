@@ -27,7 +27,7 @@ extern "C" {
 typedef struct _threadPool thread_pool_t;
 typedef struct _future future_t;
 
-thread_pool_t *create_fixed_size_thread_pool(int initial_size);
+thread_pool_t *create_fixed_size_thread_pool(int size);
 //todo thread_pool_t *create_cached_size_thread_pool(int initial_size)
 
 void start_thread_pool(thread_pool_t *tp, const pthread_attr_t *attr);
