@@ -1,1 +1,11 @@
-
+libhl:
+  linklist.h
+  linklist.c
+  atomic_defs.h
+  author:Andrea Guzzo <xant@xant.net>
+  
+  
+Thread-Pool-C:
+  threadpool.h
+  threadpool.c
+  author:Andrea Straforini <andrea.straforini.97@gmail.com>
