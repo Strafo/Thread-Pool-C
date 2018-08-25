@@ -8,9 +8,9 @@
 
 
 
-#ifndef _THREADPOOL_H
-#define _THREADPOOL_H
-
+#ifndef THREADPOOL_H
+#define THREADPOOL_H
+#define THREAD_SAFE
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -18,11 +18,12 @@ extern "C" {
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include<pthread.h>
 #include"debug/debug.h"
 #include"libhl/linklist.h"
 #include<errno.h>
-#include<math.h>
+
+#include "libhl/atomic_defs.h"
+
 
 typedef struct _threadPool thread_pool_t;
 typedef struct _future future_t;

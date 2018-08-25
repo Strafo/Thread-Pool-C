@@ -54,12 +54,14 @@ void destroy_job(struct _job *job );
 void destroy_job_future(struct _job *job );
 
 
-
-
-inline void mutex_lock(pthread_mutex_t *mutex);
-inline void mutex_unlock(pthread_mutex_t *mutex);
-void* thread_wrapper(void* tp);
 int is_ready(future_t* future);
+
+
+
+
+
+//todo
+void* thread_wrapper(void* tp);
 void* future_get(future_t* future);
 
 
@@ -210,6 +212,17 @@ void destroy_job_and_future(job_t* job ){
 }
 
 
+
+
+int is_ready(future_t* future){
+    int ir;
+    MUTEX_LOCK(&(future->mutex));
+    ir=future->isReady;
+    MUTEX_UNLOCK(&(future->mutex));
+    return ir;
+}
+
+
 /*
 
 typedef struct _job
@@ -332,58 +345,9 @@ void* thread_wrapper(void* arg){
 }
 
 
-void mutex_lock(pthread_mutex_t *mutex){
-	int res;
-	if((res=pthread_mutex_lock(mutex))!=0)
-	{
-		switch(res)
-		{
-			case EAGAIN:
-				debug(stderr,"ERROR acquiring mutex EAGAIN\n");
-				break;
-			case EINVAL:
-				debug(stderr,"ERROR acquiring mutex EINVAL\n");
-				break;
-			case ENOTRECOVERABLE:
-				debug(stderr,"ERROR acquiring mutex ENOTRECOVERABLE\n");
-				break;
-			case EOWNERDEAD:
-				debug(stderr,"ERROR acquiring mutex EOWNERDEAD\n");
-				break;
-			case EDEADLK:
-				debug(stderr,"ERROR acquiring mutex EDEADLK\n");
-				break;
-			default:
-				debug(stderr,"ERROR acquiring mutex \n");
-				break;
-		}
-	}
-}
 
-void mutex_unlock(pthread_mutex_t *mutex){
-	int res;
-	if((res=pthread_mutex_unlock(mutex))!=0)
-	{
-		switch(res)
-		{
-			case EPERM:
-				debug(stderr,"ERROR releasing mutex EAGAIN\n");
-				break;
 
-			default:
-				debug(stderr,"ERROR releasing mutex \n");
-				break;
-		}
-	}
-}
 
-int is_ready(future_t* future){
-	int ir;
-	mutex_lock(&(future->mutex));
-	ir=future->isReady;
-	mutex_unlock(&(future->mutex));
-	return ir;
-}
 
 void* future_get(future_t* future){
 	int ir;
