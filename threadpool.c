@@ -72,20 +72,23 @@ thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr
 	int error=0;
 	thread_pool_t* tp=(thread_pool_t*)malloc(sizeof(struct _thread_pool));
 	if(!tp){
-		return
+		return NULL;
 	}
 
 	tp->threadList=(pthread_t*)malloc(sizeof( pthread_t)*size);
 	if(!tp->thread_list){
-		return
+		free(tp);
+	    return NULL;
 	}
 
 	tp->jobs_list=list_create();
 	if(!tp->jobsList){
-		return
+	    free(tp->thread_list);
+	    free(tp);
+		return NULL;
 	}
 
-	if(pthread_cond_init(&(tp->job_is_empty),NULL)!=0){
+	if(pthread_cond_init(&(tp->job_is_empty),NULL)!=0){//todo la domanda è.. Dato he in linklist.h se un lock fallisce fa l'abort è veramnte necessario gestire gli errori?
 		abort();
 	}
 	tp->n_thread=size;
@@ -130,7 +133,7 @@ job_t* create_job(void){
 
 
 void destroy_job(job_t* job ) {
-	//todo devo fare la free  su start_routine?
+	//todo devo fare la free  su start_routine? (non di certo su future! guarda thread wrapper)
 	free(job);
 }
 
@@ -291,38 +294,33 @@ int stop_thread_pool(thread_pool_t* tp){
 
 
 void* thread_wrapper(void* arg){
-
-    int exit
-	thread_pool_t* tp=(thread_pool_t*)arg;
+    thread_pool_t* tp=(thread_pool_t*)arg;
 	struct job_t* my_job;
 	void* result;
 	void* (*foo)(void*);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);//todo check
-
-
 
 	while(tp->active!=THREAD_POOL_STOPPED)
 	{
         switch (tp->state) {
 
             case THREAD_POOL_RUNNING:
-            list_lock(tp->jobsList);
-            while ((my_job = (job_t *) list_fetch_value(tp->jobsList, 0)) == NULL) {
-                pthread_cond_wait(&(tp->job_is_empty), get_lock_reference(tp->jobsList));
-                if (tp->active == STOPPING) { return NULL; }
-            }
-            list_unlock(tp->jobsList);
+                list_lock(tp->jobsList);
+                while ((my_job = (job_t *) list_fetch_value(tp->jobsList, 0)) == NULL) {
+                    pthread_cond_wait(&(tp->job_is_empty), get_lock_reference(tp->jobsList));
+                }
+                list_unlock(tp->jobsList);
 
-            foo = my_job->start_routine;
+                foo = my_job->start_routine;
 
-            result = foo(my_job->arg);
+                result = foo(my_job->arg);
 
-            mutex_lock(&(my_job->future->mutex));
-            my_job->future->isReady = 1;
-            my_job->future->result = result;
-            mutex_unlock(&(my_job->future->mutex));
-            pthread_cond_broadcast(&(my_job->future->ready));//broadcast -->lost wakeup problem
-            destroy_job(my_job);
+                MUTEX_LOCK(&(my_job->future->mutex));
+                    my_job->future->isReady = 1;
+                    my_job->future->result = result;
+                MUTEX_UNLOCK(&(my_job->future->mutex));
+                pthread_cond_broadcast(&(my_job->future->ready));//broadcast -->lost wakeup problem
+                destroy_job(my_job);
             break;
             case THREAD_POOL_STOPPED:
                 break;
