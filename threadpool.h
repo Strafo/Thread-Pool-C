@@ -17,8 +17,6 @@ extern "C" {
 
 #include<stdio.h>
 #include<stdlib.h>
-#include<string.h>
-#include"debug/debug.h"
 #include"libhl/linklist.h"
 #include<errno.h>
 
@@ -28,14 +26,15 @@ extern "C" {
 typedef struct _threadPool thread_pool_t;
 typedef struct _future future_t;
 
-thread_pool_t *create_fixed_size_thread_pool(int size);
+thread_pool_t *create_fixed_size_thread_pool(int size,);
 //todo thread_pool_t *create_cached_size_thread_pool(int initial_size)
 
-void start_thread_pool(thread_pool_t *tp, const pthread_attr_t *attr);
+int stop_thread_pool(thread_pool_t* tp);
+void start_thread_pool(thread_pool_t *tp);
 
-future_t *add_job_head(thread_pool_t *tp, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+future_t *add_job_head(thread_pool_t *tp, void *(*start_routine)(void *), void *arg);
 
-future_t *add_job_tail(thread_pool_t *tp, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+future_t *add_job_tail(thread_pool_t *tp, void *(*start_routine)(void *), void *arg);
 
 int is_ready(future_t *future);
 
