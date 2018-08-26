@@ -1,9 +1,10 @@
 #include"threadpool.h"
 
 //gestione thread pool
-const int THREAD_POOL_RUNNING=1;
-const int THREAD_POOL_STOPPED=0;
-const int THREAD_POOL_PAUSED=2;
+typedef int thread_pool_state;
+const thread_pool_state THREAD_POOL_RUNNING=1;
+const thread_pool_state THREAD_POOL_STOPPED=0;
+const thread_pool_state THREAD_POOL_PAUSED=2;
 
 
 /*gestione future*/
@@ -25,11 +26,16 @@ struct _future
 };
 struct _thread_pool
 {
+    pthread_t* thread_list;
+    int n_thread;
+
+
+    linked_list_t* jobs_list;
 	pthread_cond_t job_is_empty;
-	pthread_t* thread_list;
-	linked_list_t* jobs_list;
-	int n_thread;
-	int state;
+
+    pthread_mutex_t thread_pool_mutex;
+    pthread_cond_t thread_pool_paused;
+    thread_pool_state state;
 };
 
 
@@ -48,10 +54,11 @@ thread_pool_t* create_fixed_size_thread_pool(int size);
 inline future_t* create_future(void);
 inline struct _job *create_job(void );
 
+int start_thread_pool(thread_pool_t* tp);
+int pause_thread_pool(thread_pool_t* tp);
+void shut_down_now_thread_pool(thread_pool_t* thread_pool);
+void shut_down_thread_pool(thread_pool_t* thread_pool);
 
-void shut_down_now(thread_pool_t* thread_pool);
-void shut_down(thread_pool_t* thread_pool);
-struct _job* init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg);
 
 
 void destroy_thread_pool(thread_pool_t* thread_pool);
@@ -63,11 +70,12 @@ void destroy_job_future(struct _job *job );
 int is_ready(future_t* future);
 void* thread_wrapper(void* tp);
 void* future_get(future_t* future);
+struct _job* init_job(const pthread_attr_t *attr,void *(*start_routine)(void*),void *arg);
+int change_thread_pool_state(thread_pool_state state,thread_pool_t* tp);
 
 
 
-
-thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr){//todo add pthread_setcancelstate
+thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr){
 
 	int error=0;
 	thread_pool_t* tp=(thread_pool_t*)malloc(sizeof(struct _thread_pool));
@@ -88,11 +96,19 @@ thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr
 		return NULL;
 	}
 
-	if(pthread_cond_init(&(tp->job_is_empty),NULL)!=0){//todo la domanda è.. Dato he in linklist.h se un lock fallisce fa l'abort è veramnte necessario gestire gli errori?
+	if(pthread_cond_init(&(tp->job_is_empty),NULL)!=0){//todo la domanda è.. Dato he in linklist.h se un lock fallisce fa l'abort è veramnte necessario gestire gli errori?  ->guarda le note in cima a linklist.h SIGABRT ecc
 		abort();
 	}
+
+    MUTEX_INIT(&(tp->mutex));
+    if(pthread_cond_init(&(tp->thread_pool_paused),NULL)!=0){//todo la domanda è..
+        abort();
+    }
+
 	tp->n_thread=size;
 	tp->state=THREAD_POOL_PAUSED;
+
+	//INIT THREADS
 	for(int i=0;i<tp->n_thread;i++){
 		tp->threadList[i]=THREAD_FREE_SLOT;
 	}
@@ -117,7 +133,7 @@ future_t* create_future(void ){
 	if(!future){
 		return NULL;
 	}
-	MUTEX_INIT(&(future->mutex);
+	MUTEX_INIT(&(future->mutex));
 	if(pthread_cond_init(&(future->ready),NULL)!=0){abort();}//todo fare una cosa simile alle macro di atomic_defs.h
 
 	future->is_ready=FUTURE_UNREADY;
@@ -133,7 +149,6 @@ job_t* create_job(void){
 
 
 void destroy_job(job_t* job ) {
-	//todo devo fare la free  su start_routine? (non di certo su future! guarda thread wrapper)
 	free(job);
 }
 
@@ -168,6 +183,8 @@ void destroy_thread_pool(thread_pool_t* thread_pool){
     if(!threadPool)return;
     shut_down_now(thread_pool);
     pthread_cond_destroy(&(thread_pool->job_is_empty));//todo check
+    pthread_cond_destroy(&(thread_pool->thread_pool_paused));//todo check
+    MUTEX_DESTROY(&(thread_pool->mutex));
 	list_destroy(threadPool ->jobs_list);
     free(thread_pool ->thread_list);
     free(thread_pool);
@@ -175,20 +192,19 @@ void destroy_thread_pool(thread_pool_t* thread_pool){
 }
 
 
-void shut_down_now(thread_pool_t* tp){
+void shut_down_now_thread_pool(thread_pool_t* tp){
     if(!tp)return;
-    tp->state=THREAD_POOL_STOPPED;
+    shut_down_thread_pool(tp);
     for(int i=0;i<tp->nThread;i++){
         pthread_cancel(tp->threadList[i]);
     }
-
 }
 
 
-void shut_down(thread_pool_t* tp){
-    if(!tp)return;
-    tp->active=THREAD_POOL_STOPPED;
+int shut_down_thread_pool(thread_pool_t* tp){
+    return change_thread_pool_state(THREAD_POOL_STOPPED,tp);
 }
+
 
 
 
@@ -273,24 +289,30 @@ void* future_get(future_t* future){
 	return  res;
 }
 
+
+int change_thread_pool_state(thread_pool_state state,thread_pool_t* tp){
+    if(!tp){
+        return -1;
+    }
+    MUTEX_LOCK(&(tp->mutex));
+        tp->state=state;
+        pthread_cond_broadcast(&(tp->thread_pool_paused));
+    MUTEX_UNLOCK(&(tp->mutex));
+    return 0;
+}
+
 int start_thread_pool(thread_pool_t* tp){
-	if(!tp)return -1;
-	tp->state=THREAD_POOL_RUNNING;
-	return 0;
+    return change_thread_pool_state(THREAD_POOL_RUNNING,tp);
 }
 
 
 int pause_thread_pool(thread_pool_t* tp){
-	if(!tp)return -1;
-	tp->state=THREAD_POOL_PAUSED;
-	return 0;
+    return change_thread_pool_state(THREAD_POOL_PAUSED,tp);
 }
 
-int stop_thread_pool(thread_pool_t* tp){
-    if(!tp)return -1;
-    tp->state=THREAD_POOL_STOPPED;
-    return 0;
-}
+
+
+
 
 
 void* thread_wrapper(void* arg){
@@ -298,7 +320,7 @@ void* thread_wrapper(void* arg){
 	struct job_t* my_job;
 	void* result;
 	void* (*foo)(void*);
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);//todo check
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	while(tp->active!=THREAD_POOL_STOPPED)
 	{
@@ -312,22 +334,37 @@ void* thread_wrapper(void* arg){
                 list_unlock(tp->jobsList);
 
                 foo = my_job->start_routine;
-
                 result = foo(my_job->arg);
 
                 MUTEX_LOCK(&(my_job->future->mutex));
                     my_job->future->isReady = 1;
                     my_job->future->result = result;
+                    pthread_cond_broadcast(&(my_job->future->ready));
                 MUTEX_UNLOCK(&(my_job->future->mutex));
-                pthread_cond_broadcast(&(my_job->future->ready));//broadcast -->lost wakeup problem
                 destroy_job(my_job);
             break;
             case THREAD_POOL_STOPPED:
                 break;
-            case THREAD_POOL_STOPPED:
-                //todo add cond for stopped!
+            case THREAD_POOL_PAUSED:
+                MUTEX_LOCK(&(tp->mutex));
+                while (tp->state==THREAD_POOL_PAUSED&&tp->state!=THREAD_POOL_STOPPED) {
+                    pthread_cond_wait(&(tp->thread_pool_paused), &(tp->mutex));
+                }
+                MUTEX_UNLOCK(&(tp->mutex));
                 break;
         }
 	}
 	return NULL;
 }
+/*todo list:
+ * 1)Dato che i thread wrapper sono stati settati con PTHREAD_CANCEL_ASYNCHRONOUS
+ *      -se l'utente chiama shutdownnow possibili memori leaks deadlock ecc
+ *      -se invece l'utente chiama shutdown questi mml e ddlck non possono avvenire
+ *      *si potrebbe implementare un qualcosa per risolver il problema della shutdown_now?
+ *
+ *
+ *
+ *
+ *
+ *
+ *      */
