@@ -22,17 +22,20 @@ extern "C" {
 
 #include "libhl/atomic_defs.h"
 
-
-typedef struct _threadPool thread_pool_t;
+struct _thread_pool;
+struct _future;
+struct _job;
+typedef struct _thread_pool thread_pool_t;
 typedef struct _future future_t;
-
 
 /**
  *
  * @param size
+ * @param attr
  * @return
  */
-thread_pool_t* create_fixed_size_thread_pool(int size);
+thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr);
+
 
 //todo thread_pool_t *create_cached_size_thread_pool(int initial_size)
 
@@ -57,14 +60,14 @@ int pause_thread_pool(thread_pool_t* tp);
  *
  * @param thread_pool
  */
-void shut_down_now_thread_pool(thread_pool_t* thread_pool);
+int shut_down_now_thread_pool(thread_pool_t* thread_pool);
 
 
 /**
  *
  * @param thread_pool
  */
-void shut_down_thread_pool(thread_pool_t* thread_pool);
+int shut_down_thread_pool(thread_pool_t* thread_pool);
 
 
 /**
