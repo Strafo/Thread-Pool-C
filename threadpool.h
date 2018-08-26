@@ -26,27 +26,77 @@ extern "C" {
 typedef struct _threadPool thread_pool_t;
 typedef struct _future future_t;
 
-thread_pool_t *create_fixed_size_thread_pool(int size,);
+
+/**
+ *
+ * @param size
+ * @return
+ */
+thread_pool_t* create_fixed_size_thread_pool(int size);
+
 //todo thread_pool_t *create_cached_size_thread_pool(int initial_size)
 
-int stop_thread_pool(thread_pool_t* tp);
-void start_thread_pool(thread_pool_t *tp);
 
-future_t *add_job_head(thread_pool_t *tp, void *(*start_routine)(void *), void *arg);
-
-future_t *add_job_tail(thread_pool_t *tp, void *(*start_routine)(void *), void *arg);
-
-int is_ready(future_t *future);
-
-void *future_get(future_t *future);
-
-//Testing necessary
-//void destroy_now_thread_pool(thread_pool_t* threadPool);
+/**
+ *
+ * @param tp
+ * @return
+ */
+int start_thread_pool(thread_pool_t* tp);
 
 
-void destroy_thread_pool(thread_pool_t *threadPool);
+/**
+ *
+ * @param tp
+ * @return
+ */
+int pause_thread_pool(thread_pool_t* tp);
 
-void destroy_future(future_t *future);
+
+/**
+ *
+ * @param thread_pool
+ */
+void shut_down_now_thread_pool(thread_pool_t* thread_pool);
+
+
+/**
+ *
+ * @param thread_pool
+ */
+void shut_down_thread_pool(thread_pool_t* thread_pool);
+
+
+/**
+ *
+ * @param thread_pool
+ */
+void destroy_thread_pool(thread_pool_t* thread_pool);
+
+
+/**
+ *
+ * @param future
+ */
+void destroy_future(future_t* future );
+
+
+/**
+ *
+ * @param future
+ * @return
+ */
+int is_ready(future_t* future);
+
+
+/**
+ *
+ * @param future
+ * @return
+ */
+void* future_get(future_t* future);
+
+
 
 #ifdef _cplusplus
 }
