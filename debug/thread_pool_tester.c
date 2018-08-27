@@ -20,8 +20,8 @@ int main(){
 	int* result;
 	future_t* res[njobs];
 
-	thread_pool_t* tp=create_fixed_size_thread_pool(nthread);
-	start_thread_pool(tp,NULL);
+	thread_pool_t* tp=create_fixed_size_thread_pool(nthread,NULL);
+	start_thread_pool(tp);
 
 	for(int i=0;i<njobs;i++)
 		//res[i]=add_job_tail(tp,NULL,add,&counter);

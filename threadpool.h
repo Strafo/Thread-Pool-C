@@ -99,6 +99,23 @@ int is_ready(future_t* future);
  */
 void* future_get(future_t* future);
 
+/**
+ *
+ * @param tp
+ * @param start_routine
+ * @param arg
+ * @return
+ */
+future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
+
+/**
+ *
+ * @param tp
+ * @param start_routine
+ * @param arg
+ * @return
+ */
+future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
 
 
 #ifdef _cplusplus

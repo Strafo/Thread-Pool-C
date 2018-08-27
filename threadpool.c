@@ -59,8 +59,6 @@ int shut_down_thread_pool(thread_pool_t* thread_pool);
 void* future_get(future_t* future);
 void destroy_thread_pool(thread_pool_t* thread_pool);
 void destroy_future(future_t* future );
-void destroy_job(struct _job *job );
-void destroy_job_future(struct _job *job );
 int is_ready(future_t* future);
 future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
 future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
@@ -72,8 +70,8 @@ inline struct _job *create_job(void );
 void* thread_wrapper(void* tp);
 struct _job* init_job(void *(*start_routine)(void*),void *arg);
 int change_thread_pool_state(thread_pool_state state,thread_pool_t* tp);
-
-
+void destroy_job(struct _job *job );
+void destroy_job_future(struct _job *job );
 
 
 
