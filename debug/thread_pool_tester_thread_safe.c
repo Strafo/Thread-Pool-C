@@ -13,6 +13,7 @@ void* add(void* counter) {
 	pthread_mutex_lock(&mutex);
 	    *value=*((int *) counter);
         *((int *) counter)=*((int *) counter)+1;
+        //printf("thread id:%lu\n",pthread_self());fflush(stdout);
 	pthread_mutex_unlock(&mutex);
 	return value ;
 }
@@ -37,9 +38,10 @@ int main(){
 		destroy_future(res[i]);
 		free(result);
 	}
-	printf("result::%d\n",counter );
+
 
     shut_down_thread_pool(tp);
 	destroy_thread_pool(tp);
+    printf("FINAL result::%d\n",counter );
 	printf("END\n");
 }

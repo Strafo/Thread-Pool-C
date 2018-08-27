@@ -36,9 +36,10 @@ int main(){
         destroy_future(res[i]);
         free(result);
     }
-    printf("result::%d\n",counter );
+
 
     shut_down_thread_pool(tp);
     destroy_thread_pool(tp);
+    printf("final result::%d\n",counter );
     printf("END\n");
 }
