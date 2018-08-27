@@ -6,11 +6,15 @@
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void* add(void* counter) {
-	int* ptr=counter;
+    int *value=(int*)malloc(sizeof(int));
+    if(value==NULL){
+        perror("ERRORE");
+    }
 	pthread_mutex_lock(&mutex);
-	(*ptr)++;
+	    *value=*((int *) counter);
+        *((int *) counter)=*((int *) counter)+1;
 	pthread_mutex_unlock(&mutex);
-	return counter ;
+	return value ;
 }
 
 int main(){
@@ -24,16 +28,18 @@ int main(){
 	start_thread_pool(tp);
 
 	for(int i=0;i<njobs;i++)
-		//res[i]=add_job_tail(tp,NULL,add,&counter);
-		res[i]=add_job_head(tp,NULL,add,&counter);
+		//res[i]=add_job_tail(tp,add,&counter);
+		res[i]=add_job_head(tp,add,&counter);
 
 	for(int i=0;i<njobs;i=i+10000){
 		result=(int*)future_get(res[i]);
 		printf("%d\n",*result);
+		destroy_future(res[i]);
+		free(result);
 	}
 	printf("result::%d\n",counter );
 
-
+    shut_down_thread_pool(tp);
 	destroy_thread_pool(tp);
 	printf("END\n");
 }

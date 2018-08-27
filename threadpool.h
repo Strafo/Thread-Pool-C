@@ -20,6 +20,8 @@ extern "C" {
 #include"libhl/linklist.h"
 #include<errno.h>
 
+#include <pthread.h>
+
 #include "libhl/atomic_defs.h"
 
 struct _thread_pool;

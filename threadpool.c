@@ -71,7 +71,7 @@ void* thread_wrapper(void* tp);
 struct _job* init_job(void *(*start_routine)(void*),void *arg);
 int change_thread_pool_state(thread_pool_state state,thread_pool_t* tp);
 void destroy_job(struct _job *job );
-void destroy_job_future(struct _job *job );
+void destroy_job_and_future(struct _job *job );
 
 
 
@@ -152,6 +152,7 @@ void destroy_job(job_t* job ) {
 
 //todo la domanda è.. Dato he in linklist.h se un lock fallisce fa l'abort è veramnte necessario gestire gli errori?
 
+//la free al puntatore del payload di future deve essere fatta dall'utente in quanto non sappiamo come è la struttura o tipo ecc
 void destroy_future(future_t* future ) {
 	if (!future)return;
 	MUTEX_DESTROY(future->mutex);
@@ -162,7 +163,9 @@ void destroy_future(future_t* future ) {
 void destroy_thread_pool(thread_pool_t* thread_pool){
     if(!thread_pool)return;
     pthread_cond_destroy(&(thread_pool->job_is_empty));//todo check la domanda è...
-    pthread_cond_destroy(&(thread_pool->thread_pool_paused));//todo check
+    if(pthread_cond_destroy(&(thread_pool->thread_pool_paused))!=0) {//todo check
+        printf("%s\n",strerror(errno));
+    }
     MUTEX_DESTROY(thread_pool->mutex);
 	list_destroy(thread_pool ->jobs_list);
     free(thread_pool ->thread_list);
@@ -228,7 +231,7 @@ future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
 		return NULL;
 	}
 	if(list_push_value(tp->jobs_list,job)<0){
-		destroy_job_future(job);
+		destroy_job_and_future(job);
 		return NULL;
 	}
 	pthread_cond_broadcast(&(tp->job_is_empty));//broadcast -->lost wakeup problem//todo check return value
@@ -244,7 +247,7 @@ future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
 		return NULL;
 	}
 	if(list_insert_value(tp->jobs_list,job,0)<0){
-		destroy_job_future(job);
+		destroy_job_and_future(job);
 		return NULL;
 	}
 	pthread_cond_broadcast(&(tp->job_is_empty));//lost wakeup problem//todo check return value
@@ -262,7 +265,6 @@ void* future_get(future_t* future){
 	}
 	MUTEX_UNLOCK(future->mutex);
 	res=future->result;
-	destroy_future(future);
 	return  res;
 }
 
@@ -312,12 +314,13 @@ void* thread_wrapper(void* arg){
 	        MUTEX_LOCK(my_job->future->mutex);
 	            my_job->future->is_ready =FUTURE_READY;
 	            my_job->future->result = result;
-	            pthread_cond_broadcast(&(my_job->future->ready));
 	        MUTEX_UNLOCK(my_job->future->mutex);
+            pthread_cond_broadcast(&(my_job->future->ready));
 	        destroy_job(my_job);
+
 	    }else if(tp->state==THREAD_POOL_STOPPED) {
             break;
-        }else if(tp->state==THREAD_POOL_STOPPED) {
+        }else if(tp->state==THREAD_POOL_PAUSED) {
             MUTEX_LOCK(tp->mutex);
             while (tp->state == THREAD_POOL_PAUSED && tp->state != THREAD_POOL_STOPPED) {
                 pthread_cond_wait(&(tp->thread_pool_paused), &(tp->mutex));
