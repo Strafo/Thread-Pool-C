@@ -339,6 +339,7 @@ void* thread_wrapper(void* arg){
  *      -se invece l'utente chiama shutdown questi mml e ddlck non possono avvenire
  *      *si potrebbe implementare un qualcosa per risolver il problema della shutdown_now?
  *
+ * 2)usare valgrind per memcheck
  *
  *
  *
