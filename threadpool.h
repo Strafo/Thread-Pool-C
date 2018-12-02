@@ -6,8 +6,6 @@
  * @note
  */
 
-
-
 #ifndef THREADPOOL_H
 #define THREADPOOL_H
 #define THREAD_SAFE
@@ -19,16 +17,21 @@ extern "C" {
 #include<stdlib.h>
 #include"libhl/linklist.h"
 #include<errno.h>
-
-#include <pthread.h>
-
-#include "libhl/atomic_defs.h"
+#include<pthread.h>
+#include"libhl/atomic_defs.h"
 
 struct _thread_pool;
 struct _future;
 struct _job;
 typedef struct _thread_pool thread_pool_t;
 typedef struct _future future_t;
+
+
+
+/************************************************************************
+ *  API
+ ************************************************************************/
+
 
 /**
  *
