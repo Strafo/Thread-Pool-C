@@ -1,7 +1,8 @@
-#include"../threadpool.h"
+#include"gtest/gtest.h"
 #include<stdio.h>
 #include<unistd.h>
 #include<stdlib.h>
+#include <threadpool.h>
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -18,7 +19,7 @@ void* add(void* counter) {
 	return value ;
 }
 
-int main(){
+int thread_pool_tester_thread_safe(){
 	int counter=0;
 	int nthread=4;
 	int njobs=1000000;
@@ -45,3 +46,5 @@ int main(){
     printf("FINAL result::%d\n",counter );
 	printf("END\n");
 }
+
+
