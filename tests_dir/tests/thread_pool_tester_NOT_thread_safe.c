@@ -15,7 +15,7 @@ void* add(void* counter) {
     return value ;
 }
 
-int main(){
+int thread_pool_tester_NOT_thread_safe(){
     int counter=0;
     int nthread=4;
     int njobs=1000000;
