@@ -34,10 +34,13 @@ typedef struct _future future_t;
 
 
 /**
- *
- * @param size
- * @param attr
- * @return
+ * This function creates and initializes a fixed thread pool.
+ * @param size  number of threads to be created
+ * @param attr  The attr argument points to a pthread_attr_t structure  whose  contents are  used  at  thread creation time to determine attributes for the new
+ * thread; this structure is initialized  using  pthread_attr_init(3)  and related  functions.   If  attr is NULL, then the thread is created with
+ * default attributes.
+ * @return the pool thread's pointer
+ * @return NUll if size<=0
  */
 thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr);
 
