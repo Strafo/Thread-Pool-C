@@ -33,58 +33,11 @@ typedef struct _future future_t;
  ************************************************************************/
 
 
-
-
-/***************************************
- * FUTURE
- * ************************************/
-
-/* enum for futures management*/
-enum future_state{
-    FUTURE_UNREADY=0,
-    FUTURE_READY=1
-};
-
 /**
- * @param future the future to be destroyed
- * @note if the structure is in use the behavior is undefined
  *
- */
-void destroy_future(future_t* future );
-
-
-/**
- *  Returns the state of the future
- * @param future
- * @return future_state
- */
-enum future_state is_ready(future_t* future);
-
-
-/**
- * Return the pointer to the payload of the future.
- * It's a BLOCKING function.
- * @param future
- * @return payload's pointer
- */
-void* future_get(future_t* future);
-
-
-
-
-/***************************************
- * THREAD POOL CREATION/DESTRUCTION
- * ************************************/
-
-
-/**
- * This function creates and initializes a fixed thread pool.
- * @param size  number of threads to be created
- * @param attr  The attr argument points to a pthread_attr_t structure  whose  contents are  used  at  thread creation time to determine attributes for the new
- * thread; this structure is initialized  using  pthread_attr_init(3)  and related  functions.   If  attr is NULL, then the thread is created with
- * default attributes.
- * @return the pool thread's pointer
- * @return NUll if size<=0
+ * @param size
+ * @param attr
+ * @return
  */
 thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr);
 
@@ -94,30 +47,8 @@ thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr
 
 /**
  *
- * @param thread_pool
- */
-void destroy_thread_pool(thread_pool_t* thread_pool);
-
-
-
-
-
-
-/***************************************
- * THREAD POOL STATE
- * ************************************/
-
-/* enum for thread pool management*/
-enum thread_pool_state{
-    THREAD_POOL_STOPPED=0,
-    THREAD_POOL_RUNNING=1,
-    THREAD_POOL_PAUSED=2
-};
-
-/**
- *
  * @param tp
- * @return 0 if successful, 1 if tp is a null reference
+ * @return
  */
 int start_thread_pool(thread_pool_t* tp);
 
@@ -125,7 +56,7 @@ int start_thread_pool(thread_pool_t* tp);
 /**
  *
  * @param tp
- * @return 0 if successful, 1 if tp is a null reference
+ * @return
  */
 int pause_thread_pool(thread_pool_t* tp);
 
@@ -140,23 +71,38 @@ int shut_down_now_thread_pool(thread_pool_t* thread_pool);
 /**
  *
  * @param thread_pool
- * @return 0 if successful, 1 if tp is a null reference
  */
 int shut_down_thread_pool(thread_pool_t* thread_pool);
 
+
 /**
  *
+ * @param thread_pool
  */
-enum thread_pool_state get_thread_pool_state(thread_pool_t* tp);//todo
+void destroy_thread_pool(thread_pool_t* thread_pool);
 
 
+/**
+ *
+ * @param future
+ */
+void destroy_future(future_t* future );
 
 
+/**
+ *
+ * @param future
+ * @return
+ */
+int is_ready(future_t* future);
 
 
-/***************************************
- * THREAD POOL JOBS
- * ************************************/
+/**
+ *
+ * @param future
+ * @return
+ */
+void* future_get(future_t* future);
 
 /**
  *
@@ -175,8 +121,6 @@ future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
  * @return
  */
 future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
-
-
 
 
 #ifdef _cplusplus
