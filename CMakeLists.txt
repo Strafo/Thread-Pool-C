@@ -15,3 +15,9 @@ set(SOURCE_FILES
 
 add_executable(ThreadPoolThreadSafeTest thread_pool_tester_thread_safe.c ${HEADERS_FILES} ${SOURCE_FILES})
 target_link_libraries (ThreadPoolThreadSafeTest ${CMAKE_THREAD_LIBS_INIT})
+
+add_executable(ThreadPoolNotThreadSafeTest thread_pool_tester_NOT_thread_safe.c ${HEADERS_FILES} ${SOURCE_FILES})
+target_link_libraries (ThreadPoolNotThreadSafeTest ${CMAKE_THREAD_LIBS_INIT})
+
+add_executable(ThreadPoolUnitTest thread_pool_unit_tests.c ${HEADERS_FILES} ${SOURCE_FILES})
+target_link_libraries (ThreadPoolUnitTest ${CMAKE_THREAD_LIBS_INIT})

@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<unistd.h>
 #include<stdlib.h>
-#include<threadpool.h>
+#include"threadpool.h"
 
 
 void* add(void* counter) {
@@ -41,4 +41,9 @@ int thread_pool_tester_NOT_thread_safe(){
     destroy_thread_pool(tp);
     printf("final result::%d\n",counter );
     printf("END\n");
+    return 0;
+}
+
+int main(){
+    return thread_pool_tester_NOT_thread_safe();
 }
