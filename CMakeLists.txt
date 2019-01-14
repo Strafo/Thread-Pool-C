@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(Thread-Pool-C VERSION 0.6  LANGUAGES C)
 
-add_definitions(-pthread -Wall)
+find_package (Threads)
 
-include_directories(src)
-include_directories(test)
-add_subdirectory(src)
-add_subdirectory(test)
+set(HEADERS_FILES
+        atomic_defs.h
+        linklist.h
+        threadpool.h
+        )
+set(SOURCE_FILES
+        linklist.c
+        threadpool.c
+        )
+
+add_executable(ThreadPoolThreadSafeTest thread_pool_tester_thread_safe.c ${HEADERS_FILES} ${SOURCE_FILES})
+target_link_libraries (ThreadPoolThreadSafeTest ${CMAKE_THREAD_LIBS_INIT})
