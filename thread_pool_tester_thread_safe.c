@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<unistd.h>
 #include<stdlib.h>
-#include"../src/threadpool.h"
+#include"threadpool.h"
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
