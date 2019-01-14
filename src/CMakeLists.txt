@@ -1,4 +1,3 @@
-project(Thread-Pool-C-lib)
 
 set(HEADERS_FILES
         atomic_defs.h
@@ -9,21 +8,5 @@ set(SOURCE_FILES
         linklist.c
         threadpool.c
         )
-add_library(Thread-Pool-C-lib STATIC ${SOURCE_FILES} ${HEADERS_FILES})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+add_library(ThreadPoolCLib  ${SOURCE_FILES} ${HEADERS_FILES})
 
