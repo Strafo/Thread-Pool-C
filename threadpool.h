@@ -109,6 +109,7 @@ void destroy_thread_pool(thread_pool_t* thread_pool);
 
 /* enum for thread pool management*/
 enum thread_pool_state{
+    THREAD_POOL_ERROR=-1,
     THREAD_POOL_STOPPED=0,
     THREAD_POOL_RUNNING=1,
     THREAD_POOL_PAUSED=2
@@ -117,7 +118,7 @@ enum thread_pool_state{
 /**
  *
  * @param tp
- * @return 0 if successful, 1 if tp is a null reference
+ * @return 0 if successful, -1 if tp is a null reference
  */
 int start_thread_pool(thread_pool_t* tp);
 
@@ -125,7 +126,7 @@ int start_thread_pool(thread_pool_t* tp);
 /**
  *
  * @param tp
- * @return 0 if successful, 1 if tp is a null reference
+ * @return 0 if successful, -1 if tp is a null reference
  */
 int pause_thread_pool(thread_pool_t* tp);
 
@@ -134,18 +135,20 @@ int pause_thread_pool(thread_pool_t* tp);
  *
  * @param thread_pool
  */
-int shut_down_now_thread_pool(thread_pool_t* thread_pool);
+int shut_down_now_thread_pool(thread_pool_t* thread_pool);//todo
 
 
 /**
  *
  * @param thread_pool
- * @return 0 if successful, 1 if tp is a null reference
+ * @return 0 if successful, -1 if tp is a null reference
  */
 int shut_down_thread_pool(thread_pool_t* thread_pool);
 
 /**
- *
+ * @param thread_pool
+ * @return the threadpool state {THREAD_POOL_STOPPED=0,THREAD_POOL_RUNNING=1,THREAD_POOL_PAUSED=2} if successful
+ * @return THREAD_POOL_ERROR if tp is a null reference
  */
 enum thread_pool_state get_thread_pool_state(thread_pool_t* tp);//todo
 

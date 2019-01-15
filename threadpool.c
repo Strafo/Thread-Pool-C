@@ -231,7 +231,14 @@ int pause_thread_pool(thread_pool_t* tp){
 }
 
 enum thread_pool_state get_thread_pool_state(thread_pool_t* tp){
-    //todo
+    enum thread_pool_state state;
+    if(!tp){
+        return THREAD_POOL_ERROR;
+    }
+    MUTEX_LOCK(tp->mutex);
+    state=tp->state;
+    MUTEX_UNLOCK(tp->mutex);
+    return state;
 }
 
 
