@@ -1,4 +1,4 @@
-#include"gtest/gtest.h"
+//#include"gtest/gtest.h"
 #include<stdio.h>
 #include<unistd.h>
 #include<stdlib.h>
@@ -45,6 +45,9 @@ int thread_pool_tester_thread_safe(){
 	destroy_thread_pool(tp);
     printf("FINAL result::%d\n",counter );
 	printf("END\n");
+    return  0;
 }
 
-
+int main(){
+    return thread_pool_tester_thread_safe();
+}
