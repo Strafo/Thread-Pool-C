@@ -36,11 +36,10 @@ int thread_pool_tester_NOT_thread_safe(){
         free(result);
     }
 
-
-    shut_down_thread_pool(tp);
-    destroy_thread_pool(tp);
     printf("final result::%d\n",counter );
     printf("END\n");
+    shut_down_thread_pool(tp);
+    destroy_thread_pool(tp);
     return 0;
 }
 

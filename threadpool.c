@@ -5,6 +5,7 @@
 const pthread_t THREAD_FREE_SLOT=-1;
 
 
+
 /**
  * This structure describes the status and value of the work result passed to the thread pool.
  */
@@ -145,6 +146,12 @@ void* future_get(future_t* future){
     return  res;
 }
 
+inline void set_future_result_and_state(job_t* job,void* result){
+    MUTEX_LOCK(job->future->mutex);
+    job->future->is_ready =FUTURE_READY;
+    job->future->result = result;
+    MUTEX_UNLOCK(job->future->mutex);
+}
 
 
 /********************************JOB************************************/
@@ -205,7 +212,14 @@ int shut_down_now_thread_pool(thread_pool_t* tp){
 
 
 int shut_down_thread_pool(thread_pool_t* tp){
-    return change_thread_pool_state(THREAD_POOL_STOPPED,tp);
+    void* ret;
+    if(change_thread_pool_state(THREAD_POOL_STOPPED,tp)<0){
+        return -1;
+    }
+    for(int i=0;i<tp->n_thread;i++){
+        pthread_join(tp->thread_list[i],&ret);
+    }
+    return 0;
 }
 
 
@@ -218,6 +232,9 @@ int change_thread_pool_state(enum thread_pool_state state,thread_pool_t* tp){
     tp->state=state;
     pthread_cond_broadcast(&(tp->thread_pool_paused));//todo check
     MUTEX_UNLOCK(tp->mutex);
+    list_lock(tp->jobs_list);
+    pthread_cond_broadcast(&(tp->job_is_empty));//todo check return value
+    list_unlock(tp->jobs_list);
     return 0;
 }
 
@@ -243,6 +260,8 @@ enum thread_pool_state get_thread_pool_state(thread_pool_t* tp){
 
 
 /****THREADPOOL JOBS*****/
+
+//TODO prima di pthread cond broadcast non dovrei loccare la lista?
 
 future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg){
     job_t* job=init_job(start_routine,arg);
@@ -337,19 +356,13 @@ void destroy_thread_pool(thread_pool_t* thread_pool){
 
 inline void thread_pool_paused_logic(thread_pool_t* tp){
     MUTEX_LOCK(tp->mutex);
-    while (tp->state == THREAD_POOL_PAUSED & tp->state != THREAD_POOL_STOPPED) {
+    while (tp->state == THREAD_POOL_PAUSED ) {
         pthread_cond_wait(&(tp->thread_pool_paused), &(tp->mutex));
     }
     MUTEX_UNLOCK(tp->mutex);
 }
 
 
-inline void set_future_result_and_state(job_t* job,void* result){
-    MUTEX_LOCK(job->future->mutex);
-        job->future->is_ready =FUTURE_READY;
-        job->future->result = result;
-    MUTEX_UNLOCK(job->future->mutex);
-}
 
 inline void thread_pool_running_logic(thread_pool_t* tp) {
     job_t* my_job;
@@ -357,16 +370,17 @@ inline void thread_pool_running_logic(thread_pool_t* tp) {
     void* (*foo)(void*);
 
     list_lock(tp->jobs_list);
-    while ((my_job = (job_t *) list_fetch_value(tp->jobs_list, 0)) == NULL) {//todo to be refac.
+    while (get_thread_pool_state(tp)!=THREAD_POOL_STOPPED && (my_job = (job_t *) list_fetch_value(tp->jobs_list, 0)) == NULL) {//todo get_thread_pool_error mantiene il thread nel ciclo... sarebbe meglio se esce
         pthread_cond_wait(&(tp->job_is_empty), get_lock_reference(tp->jobs_list));
     }
     list_unlock(tp->jobs_list);
-
-    foo = my_job->start_routine;
-    result = foo(my_job->arg);
-    set_future_result_and_state(my_job,result);
-    pthread_cond_broadcast(&(my_job->future->ready));
-    destroy_job(my_job);
+    if(my_job!=NULL) {
+        foo = my_job->start_routine;
+        result = foo(my_job->arg);
+        set_future_result_and_state(my_job, result);
+        pthread_cond_broadcast(&(my_job->future->ready));
+        destroy_job(my_job);
+    }
 }
 
 void* thread_wrapper(void* arg){
@@ -387,7 +401,7 @@ void* thread_wrapper(void* arg){
                 break;
 	    }
 	}
-	return NULL;
+    pthread_exit(NULL);//todo si potrebbe aggiungere un enumeratore con lo stato di uscita del thread
 }
 
 

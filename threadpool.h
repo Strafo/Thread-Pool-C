@@ -150,7 +150,7 @@ int shut_down_thread_pool(thread_pool_t* thread_pool);
  * @return the threadpool state {THREAD_POOL_STOPPED=0,THREAD_POOL_RUNNING=1,THREAD_POOL_PAUSED=2} if successful
  * @return THREAD_POOL_ERROR if tp is a null reference
  */
-enum thread_pool_state get_thread_pool_state(thread_pool_t* tp);//todo
+enum thread_pool_state get_thread_pool_state(thread_pool_t* tp);
 
 
 
