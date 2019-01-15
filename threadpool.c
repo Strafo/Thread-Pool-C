@@ -53,6 +53,8 @@ future_t* create_future(void);
 void destroy_future(future_t* future );
 enum future_state is_ready(future_t* future);
 void* future_get(future_t* future);
+void set_future_result_and_state(job_t* job,void* result);
+
 
 /****JOB*******/
 struct _job *create_job(void );
@@ -77,13 +79,20 @@ void destroy_thread_pool(thread_pool_t* thread_pool);
 
 /*******THREADPOOL LOGIC*******/
 void* thread_wrapper(void* tp);
+void thread_pool_running_logic(thread_pool_t* tp);
+void thread_pool_paused_logic(thread_pool_t* tp);
+
 
 /*****AUX FOO****///todo check restrict meaning
-
 void tp_cond_init(pthread_cond_t*  cond);
 void tp_cond_destroy(pthread_cond_t*  cond);
 
 
+
+
+
+
+/*****AUX FOO****/
 inline void tp_cond_init(pthread_cond_t*  cond){
     if(pthread_cond_init(cond,NULL)!=0){abort();}
 }
@@ -91,9 +100,6 @@ inline void tp_cond_destroy(pthread_cond_t*  cond){
     if(pthread_cond_destroy(cond)!=0){abort();}
 }
 
-void thread_pool_running_logic(thread_pool_t* tp);
-void set_future_result_and_state(job_t* job,void* result);
- void thread_pool_paused_logic(thread_pool_t* tp);
 
 
 /**********************************FUTURE*********************************/

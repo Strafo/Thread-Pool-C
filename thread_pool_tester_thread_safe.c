@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<unistd.h>
 #include<stdlib.h>
+#include <assert.h>
 #include"threadpool.h"
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -39,11 +40,11 @@ int thread_pool_tester_thread_safe(){
 		free(result);
 	}
 
-
+	printf("FINAL result::%d\n",counter );
+	printf("END\n");
+    assert(counter==1000000);
     shut_down_thread_pool(tp);
 	destroy_thread_pool(tp);
-    printf("FINAL result::%d\n",counter );
-	printf("END\n");
 	return 0;
 }
 
