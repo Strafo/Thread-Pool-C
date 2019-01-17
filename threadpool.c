@@ -53,7 +53,7 @@ struct _thread_pool
 /****FUTURE****/
 future_t* create_future(void);
 void destroy_future(future_t* future );
-enum future_state is_ready(future_t* future);
+enum future_state get_future_state(future_t* future);
 void* future_get(future_t* future);
 void set_future_result_and_state(job_t* job,void* result);
 
@@ -126,7 +126,7 @@ void destroy_future(future_t* future ) {
 }
 
 
-enum future_state is_ready(future_t* future){
+enum future_state get_future_state(future_t* future){
     enum future_state ir;
     MUTEX_LOCK(future->mutex);
     ir=future->is_ready;
