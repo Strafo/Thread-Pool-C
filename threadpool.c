@@ -398,7 +398,6 @@ void* thread_wrapper(void* arg){
                 thread_pool_running_logic(tp);
                 break;
 	        case THREAD_POOL_STOPPED:
-	            //this iteration is the last one
 	            break;
             case THREAD_POOL_PAUSED:
                 thread_pool_paused_logic(tp);
