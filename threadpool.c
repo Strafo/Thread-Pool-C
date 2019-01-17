@@ -95,10 +95,10 @@ void tp_cond_destroy(pthread_cond_t*  cond);
 
 
 /*****AUX FOO****/
-inline void tp_cond_init(pthread_cond_t*  cond){
+void tp_cond_init(pthread_cond_t*  cond){
     if(pthread_cond_init(cond,NULL)!=0){abort();}
 }
-inline void tp_cond_destroy(pthread_cond_t*  cond){
+void tp_cond_destroy(pthread_cond_t*  cond){
     if(pthread_cond_destroy(cond)!=0){abort();}
 }
 
