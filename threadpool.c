@@ -272,8 +272,9 @@ future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
         destroy_job_and_future(job);
         return NULL;
     }
+    list_lock(tp->jobs_list);
     pthread_cond_broadcast(&(tp->job_is_empty));//broadcast -->lost wakeup problem//todo check return value
-
+    list_unlock(tp->jobs_list);
     return job->future;
 }
 
@@ -288,7 +289,9 @@ future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
         destroy_job_and_future(job);
         return NULL;
     }
+    list_lock(tp->jobs_list);
     pthread_cond_broadcast(&(tp->job_is_empty));//lost wakeup problem//todo check return value
+    list_unlock(tp->jobs_list);
     return job->future;;
 }
 
