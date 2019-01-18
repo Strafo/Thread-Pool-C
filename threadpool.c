@@ -133,7 +133,7 @@ void destroy_future(future_t* future ) {
 enum future_state get_future_state(future_t* future){
     enum future_state ir;
     MUTEX_LOCK(future->mutex);
-    ir=future->is_ready;
+        ir=future->is_ready;
     MUTEX_UNLOCK(future->mutex);
     return ir;
 }
@@ -143,18 +143,18 @@ enum future_state get_future_state(future_t* future){
 void* future_get(future_t* future){
     void* res;
     MUTEX_LOCK(future->mutex);
-    while((future->is_ready)==FUTURE_UNREADY){
-        pthread_cond_wait(&(future->ready),&(future->mutex));
-    }
+        while((future->is_ready)==FUTURE_UNREADY){
+            pthread_cond_wait(&(future->ready),&(future->mutex));
+        }
+        res=future->result;
     MUTEX_UNLOCK(future->mutex);
-    res=future->result;
     return  res;
 }
 
 void set_future_result_and_state(job_t* job,void* result){//todo inline?
     MUTEX_LOCK(job->future->mutex);
-    job->future->is_ready =FUTURE_READY;
-    job->future->result = result;
+        job->future->is_ready =FUTURE_READY;
+        job->future->result = result;
     MUTEX_UNLOCK(job->future->mutex);
 }
 
@@ -234,11 +234,11 @@ int change_thread_pool_state(enum thread_pool_state state,thread_pool_t* tp){
         return -1;
     }
     MUTEX_LOCK(tp->mutex);
-    tp->state=state;
-    tp_cond_broadcast(&(tp->thread_pool_paused));
+        tp->state=state;
+        tp_cond_broadcast(&(tp->thread_pool_paused));
     MUTEX_UNLOCK(tp->mutex);
     list_lock(tp->jobs_list);
-    tp_cond_broadcast(&(tp->job_is_empty));
+        tp_cond_broadcast(&(tp->job_is_empty));
     list_unlock(tp->jobs_list);
     return 0;
 }
@@ -258,7 +258,7 @@ enum thread_pool_state get_thread_pool_state(thread_pool_t* tp){
         return THREAD_POOL_ERROR;
     }
     MUTEX_LOCK(tp->mutex);
-    state=tp->state;
+        state=tp->state;
     MUTEX_UNLOCK(tp->mutex);
     return state;
 }
@@ -363,9 +363,9 @@ void destroy_thread_pool(thread_pool_t* thread_pool){
 
 void thread_pool_paused_logic(thread_pool_t* tp){ //todo inline?
     MUTEX_LOCK(tp->mutex);
-    while (tp->state == THREAD_POOL_PAUSED ) {
-        pthread_cond_wait(&(tp->thread_pool_paused), &(tp->mutex));
-    }
+        while (tp->state == THREAD_POOL_PAUSED ) {
+            pthread_cond_wait(&(tp->thread_pool_paused), &(tp->mutex));
+        }
     MUTEX_UNLOCK(tp->mutex);
 }
 
