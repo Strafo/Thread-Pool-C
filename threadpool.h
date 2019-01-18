@@ -3,7 +3,9 @@
  * @author Andrea Straforini
  * @date 16/06/2018
  * @brief Simple Thread Pool
- * @note
+ * @note In case of failures reported from the pthread interface
+ *         abort() will be called. Callers can catch SIGABRT if more
+ *         actions need to be taken.
  */
 
 #ifndef THREADPOOL_H

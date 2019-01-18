@@ -102,6 +102,10 @@ void tp_cond_destroy(pthread_cond_t*  cond){
     if(pthread_cond_destroy(cond)!=0){abort();}
 }
 
+void tp_cond_broadcast(pthread_cond_t* cond){
+    if(pthread_cond_broadcast(cond)!=0){abort();}
+}
+
 
 
 /**********************************FUTURE*********************************/
@@ -231,10 +235,10 @@ int change_thread_pool_state(enum thread_pool_state state,thread_pool_t* tp){
     }
     MUTEX_LOCK(tp->mutex);
     tp->state=state;
-    pthread_cond_broadcast(&(tp->thread_pool_paused));//todo check
+    tp_cond_broadcast(&(tp->thread_pool_paused));
     MUTEX_UNLOCK(tp->mutex);
     list_lock(tp->jobs_list);
-    pthread_cond_broadcast(&(tp->job_is_empty));//todo check return value
+    tp_cond_broadcast(&(tp->job_is_empty));
     list_unlock(tp->jobs_list);
     return 0;
 }
@@ -274,7 +278,7 @@ future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
         return NULL;
     }
     list_lock(tp->jobs_list);
-    pthread_cond_broadcast(&(tp->job_is_empty));//broadcast -->lost wakeup problem//todo check return value
+    tp_cond_broadcast(&(tp->job_is_empty));//broadcast -->lost wakeup problem
     list_unlock(tp->jobs_list);
     return job->future;
 }
@@ -291,7 +295,7 @@ future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
         return NULL;
     }
     list_lock(tp->jobs_list);
-    pthread_cond_broadcast(&(tp->job_is_empty));//lost wakeup problem//todo check return value
+    tp_cond_broadcast(&(tp->job_is_empty));
     list_unlock(tp->jobs_list);
     return job->future;;
 }
@@ -382,7 +386,7 @@ void thread_pool_running_logic(thread_pool_t* tp) {//todo inline?
         foo = my_job->start_routine;
         result = foo(my_job->arg);
         set_future_result_and_state(my_job, result);
-        pthread_cond_broadcast(&(my_job->future->ready));
+        tp_cond_broadcast(&(my_job->future->ready));
         destroy_job(my_job);
     }
 }
