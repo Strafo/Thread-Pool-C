@@ -110,7 +110,7 @@ void tp_cond_broadcast(pthread_cond_t* cond){
 
 /**********************************FUTURE*********************************/
 
-future_t* create_future(void ){//todo inline?
+future_t* create_future(void ){
     future_t* future=(future_t*)malloc(sizeof(struct _future));
     if(!future){
         return NULL;
@@ -151,7 +151,7 @@ void* future_get(future_t* future){
     return  res;
 }
 
-void set_future_result_and_state(job_t* job,void* result){//todo inline?
+void set_future_result_and_state(job_t* job,void* result){
     MUTEX_LOCK(job->future->mutex);
         job->future->is_ready =FUTURE_READY;
         job->future->result = result;
@@ -361,7 +361,7 @@ void destroy_thread_pool(thread_pool_t* thread_pool){
 /*******THREADPOOL LOGIC*******/
 
 
-void thread_pool_paused_logic(thread_pool_t* tp){ //todo inline?
+void thread_pool_paused_logic(thread_pool_t* tp){
     MUTEX_LOCK(tp->mutex);
         while (tp->state == THREAD_POOL_PAUSED ) {
             pthread_cond_wait(&(tp->thread_pool_paused), &(tp->mutex));
@@ -371,7 +371,7 @@ void thread_pool_paused_logic(thread_pool_t* tp){ //todo inline?
 
 
 
-void thread_pool_running_logic(thread_pool_t* tp) {//todo inline?
+void thread_pool_running_logic(thread_pool_t* tp) {
     job_t* my_job;
     void* result;
     void* (*foo)(void*);
