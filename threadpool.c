@@ -266,7 +266,6 @@ enum thread_pool_state get_thread_pool_state(thread_pool_t* tp){
 
 /****THREADPOOL JOBS*****/
 
-//TODO prima di pthread cond broadcast non dovrei loccare la lista?
 
 future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg){
     job_t* job=init_job(start_routine,arg);
