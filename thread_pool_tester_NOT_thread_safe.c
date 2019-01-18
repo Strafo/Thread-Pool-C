@@ -29,7 +29,7 @@ int thread_pool_tester_NOT_thread_safe(){
         //res[i]=add_job_tail(tp,add,&counter);
         res[i]=add_job_head(tp,add,&counter);
 
-    for(int i=0;i<njobs;i=i+10000){
+    for(int i=0;i<njobs;i++){
         result=(int*)future_get(res[i]);
         printf("%d\n",*result);
         destroy_future(res[i]);

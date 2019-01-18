@@ -21,6 +21,7 @@ void* add(void* counter) {
 
 int thread_pool_tester_thread_safe(){
 	int counter=0;
+	char comando;
 	int nthread=2;
 	int njobs=1000000;
 	int* result;
@@ -33,11 +34,21 @@ int thread_pool_tester_thread_safe(){
 		//res[i]=add_job_tail(tp,add,&counter);
 		res[i]=add_job_head(tp,add,&counter);
 
-	for(int i=0;i<njobs;i=i+10000){
+	for(int i=0;i<njobs;i++){
 		result=(int*)future_get(res[i]);
-		printf("%d\n",*result);
+		if(*result%1000==0&&*result>=1000){//serve per non stampare tutti gli output
+		    printf("%d\n",*result);
+		}
 		destroy_future(res[i]);
 		free(result);
+		if(i==5000){
+			printf("Stopping tp...\n");
+			pause_thread_pool(tp);
+			assert(get_thread_pool_state(tp)==THREAD_POOL_PAUSED);
+			sleep(1);
+			printf("Vuoi ripartire?\n");
+			scanf("%c",&comando);
+		}
 	}
 
 	printf("FINAL result::%d\n",counter );
