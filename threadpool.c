@@ -255,7 +255,7 @@ int pause_thread_pool(thread_pool_t* tp){
 enum thread_pool_state get_thread_pool_state(thread_pool_t* tp){
     enum thread_pool_state state;
     if(!tp){
-        return THREAD_POOL_ERROR;
+        return NULL;
     }
     MUTEX_LOCK(tp->mutex);
         state=tp->state;
@@ -377,7 +377,7 @@ void thread_pool_running_logic(thread_pool_t* tp) {
     void* (*foo)(void*);
 
     list_lock(tp->jobs_list);
-    while (get_thread_pool_state(tp)==THREAD_POOL_RUNNING && (my_job = (job_t *) list_fetch_value(tp->jobs_list, 0)) == NULL) {//todo get_thread_pool_error mantiene il thread nel ciclo... sarebbe meglio se esce
+    while (get_thread_pool_state(tp)==THREAD_POOL_RUNNING && (my_job = (job_t *) list_fetch_value(tp->jobs_list, 0)) == NULL) {
         pthread_cond_wait(&(tp->job_is_empty), get_lock_reference(tp->jobs_list));
     }
     list_unlock(tp->jobs_list);
