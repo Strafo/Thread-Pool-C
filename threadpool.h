@@ -118,6 +118,7 @@ void destroy_thread_pool(thread_pool_t* thread_pool);
 
 /* enum for thread pool management*/
 enum thread_pool_state{
+    THREAD_POOL_ERROR=-1,
     THREAD_POOL_STOPPED=0,
     THREAD_POOL_RUNNING=1,
     THREAD_POOL_PAUSED=2
