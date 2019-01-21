@@ -91,6 +91,7 @@ void* future_get(future_t* future);
  * whose  contents are  used  at  thread creation time to determine attributes for the new thread;
  * this structure is initialized  using  pthread_attr_init(3)  and related  functions.
  * If  attr is NULL, then the thread is created with default attributes.
+ * Initial thread pool status is THREAD_POOL_PAUSED.
  * @return the  thread_pool's pointer
  * @return NUll if size<=0
  */
