@@ -1,9 +1,16 @@
 #include"threadpool.h"
 
+//todo aggiungere codice per settare campo state del thread
+enum _thread_state{
+    FREE_SLOT,
+    ACTIVE,//for cached  tp
+    INACTIVE
+};
 
-/* const variables for thread list management*/
-const pthread_t THREAD_FREE_SLOT=-1;
-
+struct _thread_slot{
+    enum _thread_state thread_state;
+    pthread_t thread_id;
+};
 
 
 /**
@@ -34,7 +41,7 @@ typedef struct _job
 struct _thread_pool
 {
     /**Threads info**/
-    pthread_t* thread_list;
+    struct _thread_slot* thread_list;
     int n_thread;
 
     /**Jobs info**/
@@ -132,6 +139,8 @@ void destroy_future(future_t* future ) {
 
 enum future_state get_future_state(future_t* future){
     enum future_state ir;
+    if(!future)
+        return FUTURE_ERROR;
     MUTEX_LOCK(future->mutex);
         ir=future->is_ready;
     MUTEX_UNLOCK(future->mutex);
@@ -142,6 +151,7 @@ enum future_state get_future_state(future_t* future){
 
 void* future_get(future_t* future){
     void* res;
+    if(!future)return NULL;
     MUTEX_LOCK(future->mutex);
         while((future->is_ready)==FUTURE_UNREADY){
             pthread_cond_wait(&(future->ready),&(future->mutex));
@@ -152,6 +162,7 @@ void* future_get(future_t* future){
 }
 
 void set_future_result_and_state(job_t* job,void* result){
+    if(!job)return;
     MUTEX_LOCK(job->future->mutex);
         job->future->is_ready =FUTURE_READY;
         job->future->result = result;
@@ -178,7 +189,7 @@ void destroy_job(job_t* job ) {
 
 
 job_t* init_job(void *(*start_routine)(void*),void *arg){
-    if(start_routine==NULL)return NULL;
+    if(!start_routine)return NULL;
 
     job_t* job=create_job();
     if(!job){
@@ -210,7 +221,7 @@ int shut_down_now_thread_pool(thread_pool_t* tp){
     if(!tp)return -1;
     shut_down_thread_pool(tp);////todo non va bene la chiamata a shut_down è bloccante
     for(int i=0;i<tp->n_thread;i++){
-        pthread_cancel(tp->thread_list[i]);
+        pthread_cancel(tp->thread_list[i].thread_id);
     }
     return 0;
 }
@@ -222,7 +233,9 @@ int shut_down_thread_pool(thread_pool_t* tp){
         return -1;
     }
     for(int i=0;i<tp->n_thread;i++){
-        pthread_join(tp->thread_list[i],&ret);
+        if(tp->thread_list[i].thread_state!=FREE_SLOT) {
+            pthread_join(tp->thread_list[i].thread_id, &ret);
+        }
     }
     return 0;
 }
@@ -255,11 +268,12 @@ int pause_thread_pool(thread_pool_t* tp){
 enum thread_pool_state get_thread_pool_state(thread_pool_t* tp){
     enum thread_pool_state state;
     if(!tp){
-        return NULL;
+        state=THREAD_POOL_ERROR;
+    }else {
+        MUTEX_LOCK(tp->mutex);
+        state = tp->state;
+        MUTEX_UNLOCK(tp->mutex);
     }
-    MUTEX_LOCK(tp->mutex);
-        state=tp->state;
-    MUTEX_UNLOCK(tp->mutex);
     return state;
 }
 
@@ -268,6 +282,9 @@ enum thread_pool_state get_thread_pool_state(thread_pool_t* tp){
 
 
 future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg){
+    if(!tp||!start_routine){
+        return NULL;
+    }
     job_t* job=init_job(start_routine,arg);
     if(!job){
         return NULL;
@@ -277,7 +294,7 @@ future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
         return NULL;
     }
     list_lock(tp->jobs_list);
-    tp_cond_broadcast(&(tp->job_is_empty));//broadcast -->lost wakeup problem
+        tp_cond_broadcast(&(tp->job_is_empty));//broadcast -->lost wakeup problem
     list_unlock(tp->jobs_list);
     return job->future;
 }
@@ -285,6 +302,9 @@ future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
 
 
 future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg){
+    if(!tp||!start_routine){
+        return NULL;
+    }
     job_t* job=init_job(start_routine,arg);
     if(!job){
         return NULL;
@@ -294,33 +314,25 @@ future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
         return NULL;
     }
     list_lock(tp->jobs_list);
-    tp_cond_broadcast(&(tp->job_is_empty));
+        tp_cond_broadcast(&(tp->job_is_empty));
     list_unlock(tp->jobs_list);
-    return job->future;;
+    return job->future;
 }
 
 
 /****THREADPOOL CREATION/DESCTRUCT*****/
 
 thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr){
-
-    //checking input values
+    thread_pool_t* tp=NULL;
     if(size<=0)return NULL;
-
-
-	thread_pool_t* tp=(thread_pool_t*)malloc(sizeof(struct _thread_pool));
-	if(!tp){
+    if(!(tp=(thread_pool_t*)malloc(sizeof(struct _thread_pool)))){
 		return NULL;
 	}
-
-	tp->thread_list=(pthread_t*)malloc(sizeof( pthread_t)*size);
-	if(!tp->thread_list){
-		free(tp);
-	    return NULL;
-	}
-
-	tp->jobs_list=list_create();
-	if(!tp->jobs_list){
+	if(!(tp->thread_list=(struct _thread_slot*)malloc(sizeof(struct _thread_slot)*size))){
+        free(tp);
+        return NULL;
+    }
+	if(!(tp->jobs_list=list_create())){
 	    free(tp->thread_list);
 	    free(tp);
 		return NULL;
@@ -333,14 +345,16 @@ thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr
 	tp->state=THREAD_POOL_PAUSED;
 	//INIT THREADS
 	for(int i=0;i<tp->n_thread;i++){
-		tp->thread_list[i]=THREAD_FREE_SLOT;
+		tp->thread_list[i].thread_state=FREE_SLOT;
 	}
 
 	for(int i=0;i<tp->n_thread;i++){
-		if(pthread_create(&(tp->thread_list[i]),attr,thread_wrapper,(void*)tp)!=0){
-		    shut_down_now_thread_pool(tp);
+		if(pthread_create(&(tp->thread_list[i].thread_id),attr,thread_wrapper,(void*)tp)!=0){
+		    shut_down_thread_pool(tp);
             destroy_thread_pool(tp);
             break;
+		}else{
+		    tp->thread_list[i].thread_state=INACTIVE;
 		}
 	}
 	return tp;
@@ -372,8 +386,8 @@ void thread_pool_paused_logic(thread_pool_t* tp){
 
 
 void thread_pool_running_logic(thread_pool_t* tp) {
-    job_t* my_job;
-    void* result;
+    job_t* my_job=NULL;
+    void* result=NULL;
     void* (*foo)(void*);
 
     list_lock(tp->jobs_list);
@@ -383,7 +397,7 @@ void thread_pool_running_logic(thread_pool_t* tp) {
     list_unlock(tp->jobs_list);
     if(my_job!=NULL) {
         foo = my_job->start_routine;
-        result = foo(my_job->arg);
+        result = foo(my_job->arg);//foo can not be NULL because init_job does not allow it
         set_future_result_and_state(my_job, result);
         tp_cond_broadcast(&(my_job->future->ready));
         destroy_job(my_job);
