@@ -427,19 +427,3 @@ void* thread_wrapper(void* arg){
 
 
 
-
-
-
-/*todo list:
- * 1)Dato che i thread wrapper sono stati settati con PTHREAD_CANCEL_ASYNCHRONOUS
- *      -se l'utente chiama shutdownnow possibili memori leaks deadlock ecc
- *      -se invece l'utente chiama shutdown questi mml e ddlck non possono avvenire
- *      *si potrebbe implementare un qualcosa per risolver il problema della shutdown_now?
- *
- * 2)usare valgrind per memcheck
- *
- *
- *
- *
- *
- *      */
