@@ -3,13 +3,14 @@
 #include<stdlib.h>
 #include <assert.h>
 #include"threadpool.h"
-
+#define NJOBS 1000000
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void* add(void* counter) {
     int *value=(int*)malloc(sizeof(int));
     if(value==NULL){
         perror("ERRORE");
+		return NULL;
     }
 	pthread_mutex_lock(&mutex);
 	    *value=*((int *) counter);
@@ -23,18 +24,18 @@ int thread_pool_tester_thread_safe(){
 	int counter=0;
 	char comando;
 	int nthread=2;
-	int njobs=1000000;
-	int* result;
-	future_t* res[njobs];
+	int* result=NULL;
+	future_t* res[NJOBS]={NULL};
+	thread_pool_t* tp=NULL;
 
-	thread_pool_t* tp=create_fixed_size_thread_pool(nthread,NULL);
+	tp=create_fixed_size_thread_pool(nthread,NULL);
+	if(tp==NULL)return 1;
 	start_thread_pool(tp);
 
-	for(int i=0;i<njobs;i++)
-		//res[i]=add_job_tail(tp,add,&counter);
-		res[i]=add_job_head(tp,add,&counter);
-
-	for(int i=0;i<njobs;i++){
+	for(int i=0;i<NJOBS;i++) {
+		res[i] = add_job_head(tp, add, &counter);
+	}
+	for(int i=0;i<NJOBS;i++){
 		result=(int*)future_get(res[i]);
 		if(*result%1000==0&&*result>=1000){//serve per non stampare tutti gli output
 		    printf("%d\n",*result);
