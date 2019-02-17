@@ -139,6 +139,8 @@ void destroy_future(future_t* future ) {
 
 enum future_state get_future_state(future_t* future){
     enum future_state ir;
+    if(!future)
+        return FUTURE_ERROR;
     MUTEX_LOCK(future->mutex);
         ir=future->is_ready;
     MUTEX_UNLOCK(future->mutex);
@@ -149,6 +151,7 @@ enum future_state get_future_state(future_t* future){
 
 void* future_get(future_t* future){
     void* res;
+    if(!future)return NULL;
     MUTEX_LOCK(future->mutex);
         while((future->is_ready)==FUTURE_UNREADY){
             pthread_cond_wait(&(future->ready),&(future->mutex));
@@ -159,6 +162,7 @@ void* future_get(future_t* future){
 }
 
 void set_future_result_and_state(job_t* job,void* result){
+    if(!job)return;
     MUTEX_LOCK(job->future->mutex);
         job->future->is_ready =FUTURE_READY;
         job->future->result = result;

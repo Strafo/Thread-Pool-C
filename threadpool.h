@@ -45,6 +45,7 @@ typedef struct _future future_t;
  * To get the status of the future, simply call the function: get_future_state
  */
 enum future_state{
+    FUTURE_ERROR=-1,
     FUTURE_UNREADY=0,
     FUTURE_READY=1
 };
@@ -62,7 +63,7 @@ void destroy_future(future_t* future );
 /**
  * Returns the status of the future.
  * The possible states of the object are expressed by the enumerator: future_state
- * @return future_state
+ * @return future_state; FUTURE_ERROR if the future was a null reference.
  */
 enum future_state get_future_state(future_t* future);
 
@@ -73,6 +74,8 @@ enum future_state get_future_state(future_t* future);
  * the operation BLOCKS the execution of the current thread until
  * the state of the object turns out to be of type: FUTURE_READY
  * @return the pointer to the payload.
+ * @return  null pointer if the future past was invalid.
+ * @note the null return value could be the exact payload value and not an error!
  */
 void* future_get(future_t* future);
 
