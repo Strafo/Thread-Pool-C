@@ -23,21 +23,32 @@ extern "C" {
 struct _thread_pool;
 struct _future;
 struct _job;
-typedef struct _thread_pool thread_pool_t;
-typedef struct _future future_t;
-
 
 
 /************************************************************************
  *  API
  ************************************************************************/
-
-
+/**
+ *The following API is inspired by the Java ExecutorService (ThreadPool) and Future interfaces.
+ * Therefore, to get a general idea of ​​the functioning you can use the Oracle documentation.
+ * This version implements the fixed size version with some limitations.
+ * e.g. If the threads are deleted they are not restored.
+ */
 
 
 /***************************************
  * FUTURE
  * ************************************/
+
+
+/**
+ * @brief Future
+ * A Future represents the result of an asynchronous computation.
+ * Functions are provided to check if the computation is complete , to wait for its completion, and to retrieve the result of the computation.
+ * The result can only be retrieved using function get when the computation has completed, blocking if necessary until it is ready.
+ */
+typedef struct _future future_t;
+
 
 /**
  * Possible states in which the future can be.
@@ -48,6 +59,7 @@ enum future_state{
     FUTURE_UNREADY=0,
     FUTURE_READY=1
 };
+
 
 /**
  * This function destroys the object but not its contents.
@@ -82,6 +94,19 @@ void* future_get(future_t* future);
 
 
 /***************************************
+ * THREAD POOL
+ * ************************************/
+
+
+/**
+ * @brief Thread Pool
+ * This type of thread pool always has a specified number of threads running.
+ * Jobs(Tasks) are submitted to the pool via an internal queue, which holds extra jobs whenever there are more active tasks than threads.
+ */
+typedef struct _thread_pool thread_pool_t;
+
+
+/***************************************
  * THREAD POOL CREATION/DESTRUCTION
  * ************************************/
 
@@ -100,9 +125,6 @@ void* future_get(future_t* future);
 thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr);
 
 
-//todo thread_pool_t *create_cached_size_thread_pool(int initial_size)
-
-
 /**
  * This function frees the memory occupied by the threadpool.Use one of the shutdown functions before using "destroy_threadpool".
  * @param thread_pool (if null reference no action is performed)
@@ -111,12 +133,10 @@ void destroy_thread_pool(thread_pool_t* thread_pool);
 
 
 
-
-
-
 /***************************************
  * THREAD POOL STATE
  * ************************************/
+
 
 /* enum for thread pool management*/
 enum thread_pool_state{
@@ -125,6 +145,7 @@ enum thread_pool_state{
     THREAD_POOL_RUNNING=1,
     THREAD_POOL_PAUSED=2
 };
+
 
 /**
  * Set the threadpool passed in the state: THREAD_POOL_RUNNING
@@ -172,11 +193,10 @@ enum thread_pool_state get_thread_pool_state(thread_pool_t* tp);
 
 
 
-
-
 /***************************************
  * THREAD POOL JOBS
  * ************************************/
+
 
 /**
  * This function adds the task to the head of the jobs list.
@@ -187,6 +207,7 @@ enum thread_pool_state get_thread_pool_state(thread_pool_t* tp);
  * @return null if tp or start_routine are invalid pointers.
 */
 future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
+
 
 /**
  * This function adds the task to the tail of the jobs list.
@@ -206,3 +227,5 @@ future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
 #endif
 
 #endif
+
+//todo aggiungere un breve esempio di utilizzo
