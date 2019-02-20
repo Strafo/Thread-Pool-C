@@ -10,7 +10,6 @@
 
 #ifndef THREADPOOL_H
 #define THREADPOOL_H
-#define THREAD_SAFE   //todo è già dichiarato in linklist.h rimuovere?
 #ifdef __cplusplus
 extern "C" {
 #endif
