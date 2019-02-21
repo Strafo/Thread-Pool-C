@@ -58,26 +58,26 @@ struct _thread_pool
 
 
 /****FUTURE****/
-future_t* create_future(void);
-void set_future_result_and_state(job_t* job,void* result);
+static inline future_t* create_future(void);
+static inline void set_future_result_and_state(job_t* job,void* result);
 
 /****JOB*******/
-struct _job *create_job(void );
-void destroy_job(struct _job *job );
-void destroy_job_and_future(struct _job *job );
-struct _job* init_job(void *(*start_routine)(void*),void *arg);
+static inline struct _job *create_job(void );
+static inline void destroy_job(struct _job *job );
+static inline void destroy_job_and_future(struct _job *job );
+static inline struct _job* init_job(void *(*start_routine)(void*),void *arg);
 
 /****THREADPOOL STATE*****/
-int change_thread_pool_state(enum thread_pool_state state,thread_pool_t* tp);
+static inline int change_thread_pool_state(enum thread_pool_state state,thread_pool_t* tp);
 
 /*******THREADPOOL LOGIC*******/
-void* thread_wrapper(void* arg);
-void thread_pool_running_logic(thread_pool_t* tp);
-void thread_pool_paused_logic(thread_pool_t* tp);
+static inline void* thread_wrapper(void* arg);
+static inline void thread_pool_running_logic(thread_pool_t* tp);
+static inline void thread_pool_paused_logic(thread_pool_t* tp);
 
 /*****AUX FOO****///todo check restrict meaning
-void tp_cond_init(pthread_cond_t*  cond);
-void tp_cond_destroy(pthread_cond_t*  cond);
+static inline void tp_cond_init(pthread_cond_t*  cond);
+static inline void tp_cond_destroy(pthread_cond_t*  cond);
 
 
 
@@ -85,14 +85,14 @@ void tp_cond_destroy(pthread_cond_t*  cond);
 
 
 /*****AUX FOO****/
-void tp_cond_init(pthread_cond_t*  cond){
+static inline void tp_cond_init(pthread_cond_t*  cond){
     if(pthread_cond_init(cond,NULL)!=0){abort();}
 }
-void tp_cond_destroy(pthread_cond_t*  cond){
+static inline void tp_cond_destroy(pthread_cond_t*  cond){
     if(pthread_cond_destroy(cond)!=0){abort();}
 }
 
-void tp_cond_broadcast(pthread_cond_t* cond){
+static inline void tp_cond_broadcast(pthread_cond_t* cond){
     if(pthread_cond_broadcast(cond)!=0){abort();}
 }
 
