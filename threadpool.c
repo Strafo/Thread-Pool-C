@@ -59,11 +59,7 @@ struct _thread_pool
 
 /****FUTURE****/
 future_t* create_future(void);
-void destroy_future(future_t* future );
-enum future_state get_future_state(future_t* future);
-void* future_get(future_t* future);
 void set_future_result_and_state(job_t* job,void* result);
-
 
 /****JOB*******/
 struct _job *create_job(void );
@@ -72,25 +68,12 @@ void destroy_job_and_future(struct _job *job );
 struct _job* init_job(void *(*start_routine)(void*),void *arg);
 
 /****THREADPOOL STATE*****/
-int start_thread_pool(thread_pool_t* tp);
-int pause_thread_pool(thread_pool_t* tp);
 int change_thread_pool_state(enum thread_pool_state state,thread_pool_t* tp);
-int shut_down_now_thread_pool(thread_pool_t* thread_pool);
-int shut_down_thread_pool(thread_pool_t* thread_pool);
-
-/****THREADPOOL JOBS*****/
-future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
-future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
-
-/****THREADPOOL CREATION/DESCTRUCT*****/
-thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr);
-void destroy_thread_pool(thread_pool_t* thread_pool);
 
 /*******THREADPOOL LOGIC*******/
 void* thread_wrapper(void* arg);
 void thread_pool_running_logic(thread_pool_t* tp);
 void thread_pool_paused_logic(thread_pool_t* tp);
-
 
 /*****AUX FOO****///todo check restrict meaning
 void tp_cond_init(pthread_cond_t*  cond);

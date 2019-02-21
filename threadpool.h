@@ -25,7 +25,7 @@ extern "C" {
  *  API
  ************************************************************************/
 /**
- *The following API is inspired by the Java ExecutorService (ThreadPool) and Future interfaces.
+ * The following API is inspired by the Java ExecutorService (ThreadPool) and Future interfaces.
  * Therefore, to get a general idea of ​​the functioning you can use the Oracle documentation.
  * This version implements the fixed size version with some limitations.
  * e.g. If the threads are deleted they are not restored.
