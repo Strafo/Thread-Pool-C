@@ -20,10 +20,6 @@ extern "C" {
 #include<pthread.h>
 #include"atomic_defs.h"
 
-struct _thread_pool;
-struct _future;
-struct _job;
-
 
 /************************************************************************
  *  API
