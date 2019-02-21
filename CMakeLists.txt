@@ -21,3 +21,4 @@ target_link_libraries (ThreadPoolNotThreadSafeTest ${CMAKE_THREAD_LIBS_INIT})
 
 add_executable(ThreadPoolUnitTest thread_pool_unit_tests.c ${HEADERS_FILES} ${SOURCE_FILES})
 target_link_libraries (ThreadPoolUnitTest ${CMAKE_THREAD_LIBS_INIT})
+

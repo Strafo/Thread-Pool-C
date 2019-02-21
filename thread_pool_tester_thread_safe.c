@@ -23,7 +23,7 @@ void* add(void* counter) {
 int thread_pool_tester_thread_safe(){
 	int counter=0;
 	char comando;
-	int nthread=10;
+	int nthread=5;
 	int* result=NULL;
 	future_t* res[NJOBS]={NULL};
 	thread_pool_t* tp=NULL;

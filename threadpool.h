@@ -20,16 +20,12 @@ extern "C" {
 #include<pthread.h>
 #include"atomic_defs.h"
 
-struct _thread_pool;
-struct _future;
-struct _job;
-
 
 /************************************************************************
  *  API
  ************************************************************************/
 /**
- *The following API is inspired by the Java ExecutorService (ThreadPool) and Future interfaces.
+ * The following API is inspired by the Java ExecutorService (ThreadPool) and Future interfaces.
  * Therefore, to get a general idea of ​​the functioning you can use the Oracle documentation.
  * This version implements the fixed size version with some limitations.
  * e.g. If the threads are deleted they are not restored.
@@ -229,3 +225,85 @@ future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
 #endif
 
 //todo aggiungere un breve esempio di utilizzo
+
+
+/***************************************
+ * USAGE EXAMPLE
+ * ************************************/
+/*
+Small program where a counter is incremented 1000 times via an add function passed to the Thread_pool.
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<assert.h>
+#include"threadpool.h"
+#define NJOBS 10000
+#define NTHREAD 5
+#define STR_LENGTH 100
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void* add(void* counter) {
+    pthread_mutex_lock(&mutex);
+    *((int *) counter)=*((int *) counter)+1;
+    pthread_mutex_unlock(&mutex);
+    return NULL;
+}
+
+void* create_string(void* arg){
+    char* string=(char*)malloc(sizeof(char)*STR_LENGTH);
+    return strncpy(string,"COUNTER VALUE IS:",STR_LENGTH);
+}
+
+
+int main(){
+    int counter=0;
+    char* string;
+    future_t* add_res[NJOBS]={NULL};
+    future_t* future;
+    thread_pool_t* tp;
+
+    if(!(tp=create_fixed_size_thread_pool(NTHREAD,NULL)))return EXIT_FAILURE;
+    start_thread_pool(tp);
+    //adding the tasks to the list
+    for(int i=0;i<NJOBS;i++) {
+        add_res[i]=add_job_head(tp, add, &counter);
+    }
+    future=add_job_tail(tp,create_string,NULL);
+    //waiting for the termination of the tasks
+    for(int i=0;i<NJOBS;i++){
+        future_get(add_res[i]);
+        destroy_future(add_res[i]);
+    }
+    string=(char*)future_get(future);
+    assert(counter==NJOBS);
+    assert(shut_down_thread_pool(tp)==0);
+    assert(get_thread_pool_state(tp)==THREAD_POOL_STOPPED);
+    destroy_thread_pool(tp);
+    printf("%s%d",string,counter);
+    destroy_future(future);
+    free(string);
+    return EXIT_SUCCESS;
+}
+
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
