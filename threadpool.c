@@ -397,6 +397,7 @@ void* thread_wrapper(void* arg){
             case THREAD_POOL_RUNNING:
                 thread_pool_running_logic(tp);
                 break;
+            case THREAD_POOL_ERROR:
 	        case THREAD_POOL_STOPPED:
 	            break;
             case THREAD_POOL_PAUSED:
