@@ -26,7 +26,7 @@ extern "C" {
  ************************************************************************/
 /**
  * The following API is inspired by the Java ExecutorService (ThreadPool) and Future interfaces.
- * Therefore, to get a general idea of ​​the functioning you can use the Oracle documentation.
+ * Therefore, to get a general idea of the functioning you can use the Oracle documentation.
  * This version implements the fixed size version with some limitations.
  * e.g. If the threads are deleted they are not restored.
  */
@@ -98,6 +98,7 @@ void* future_get(future_t* future);
  * @brief Thread Pool
  * This type of thread pool always has a specified number of threads running.
  * Jobs(Tasks) are submitted to the pool via an internal queue, which holds extra jobs whenever there are more active tasks than threads.
+ * Threads consume tasks starting at the head of the list.
  */
 typedef struct _thread_pool thread_pool_t;
 
@@ -224,7 +225,6 @@ future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
 
 #endif
 
-//todo aggiungere un breve esempio di utilizzo
 
 
 /***************************************
