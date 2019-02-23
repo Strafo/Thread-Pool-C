@@ -10,6 +10,7 @@ enum _thread_state{
 struct _thread_slot{
     enum _thread_state thread_state;
     pthread_t thread_id;
+    pthread_attr_t attr;
 };
 
 
@@ -96,6 +97,13 @@ static inline void tp_cond_broadcast(pthread_cond_t* cond){
     if(pthread_cond_broadcast(cond)!=0){abort();}
 }
 
+static inline void tp_thread_attr_init(pthread_attr_t *attr){
+    if((pthread_attr_init(attr)!=0)||(pthread_attr_setdetachstate(attr,PTHREAD_CREATE_DETACHED)!=0)){abort();}
+}
+
+static inline void tp_pthread_cond_wait(pthread_cond_t * cond,pthread_mutex_t * mutex){//todo check restrinct meaning pthread_cond_t *restrict cond,pthread_mutex_t *restrict mutex
+    if(pthread_cond_wait(cond,mutex)!=0){abort();}
+}
 
 
 /**********************************FUTURE*********************************/
@@ -122,8 +130,9 @@ void destroy_future(future_t* future ) {
 
 enum future_state get_future_state(future_t* future){
     enum future_state ir;
-    if(!future)
+    if(!future) {
         return FUTURE_ERROR;
+    }
     MUTEX_LOCK(future->mutex);
         ir=future->is_ready;
     MUTEX_UNLOCK(future->mutex);
@@ -137,7 +146,7 @@ void* future_get(future_t* future){
     if(!future)return NULL;
     MUTEX_LOCK(future->mutex);
         while((future->is_ready)==FUTURE_UNREADY){
-            pthread_cond_wait(&(future->ready),&(future->mutex));
+            tp_pthread_cond_wait(&(future->ready),&(future->mutex));
         }
         res=future->result;
     MUTEX_UNLOCK(future->mutex);
@@ -201,23 +210,28 @@ job_t* init_job(void *(*start_routine)(void*),void *arg){
 
 
 int shut_down_now_thread_pool(thread_pool_t* tp){
-    if(!tp)return -1;
-    shut_down_thread_pool(tp);////todo non va bene la chiamata a shut_down è bloccante
+    if(change_thread_pool_state(THREAD_POOL_STOPPED,tp)<0){
+        return -1;
+    }
     for(int i=0;i<tp->n_thread;i++){
-        pthread_cancel(tp->thread_list[i].thread_id);
+        if(tp->thread_list[i].thread_state!=FREE_SLOT) {
+            pthread_cancel(tp->thread_list[i].thread_id);//non gestisco l'errore... non so non mi pare il caso
+            pthread_attr_destroy(&(tp->thread_list[i].attr));//non gestisco l'errore... non so ...
+            tp->thread_list[i].thread_state=FREE_SLOT;
+        }
     }
     return 0;
 }
 
 
 int shut_down_thread_pool(thread_pool_t* tp){
-    void* ret;
     if(change_thread_pool_state(THREAD_POOL_STOPPED,tp)<0){
         return -1;
     }
     for(int i=0;i<tp->n_thread;i++){
         if(tp->thread_list[i].thread_state!=FREE_SLOT) {
-            pthread_join(tp->thread_list[i].thread_id, &ret);
+            pthread_attr_destroy(&(tp->thread_list[i].attr));//non gestisco l'errore... non so non mi pare il caso
+            tp->thread_list[i].thread_state=FREE_SLOT;
         }
     }
     return 0;
@@ -305,7 +319,7 @@ future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
 
 /****THREADPOOL CREATION/DESCTRUCT*****/
 
-thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr){
+thread_pool_t* create_fixed_size_thread_pool(int size){//todo necessario refactoring
     thread_pool_t* tp=NULL;
     if(size<=0)return NULL;
     if(!(tp=(thread_pool_t*)malloc(sizeof(struct _thread_pool)))){
@@ -326,16 +340,16 @@ thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr
     tp_cond_init(&(tp->thread_pool_paused));
 	tp->n_thread=size;
 	tp->state=THREAD_POOL_PAUSED;
+
 	//INIT THREADS
 	for(int i=0;i<tp->n_thread;i++){
 		tp->thread_list[i].thread_state=FREE_SLOT;
+        tp_thread_attr_init(&(tp->thread_list[i].attr));
 	}
 
 	for(int i=0;i<tp->n_thread;i++){
-		if(pthread_create(&(tp->thread_list[i].thread_id),attr,thread_wrapper,(void*)tp)!=0){
-		    shut_down_thread_pool(tp);
-            destroy_thread_pool(tp);
-            break;
+		if(pthread_create(&(tp->thread_list[i].thread_id),&(tp->thread_list[i].attr),thread_wrapper,(void*)tp)!=0){
+		    abort();
 		}else{
 		    tp->thread_list[i].thread_state=INACTIVE;
 		}
@@ -361,7 +375,7 @@ void destroy_thread_pool(thread_pool_t* thread_pool){
 void thread_pool_paused_logic(thread_pool_t* tp){
     MUTEX_LOCK(tp->mutex);
         while (tp->state == THREAD_POOL_PAUSED ) {
-            pthread_cond_wait(&(tp->thread_pool_paused), &(tp->mutex));
+            tp_pthread_cond_wait(&(tp->thread_pool_paused), &(tp->mutex));
         }
     MUTEX_UNLOCK(tp->mutex);
 }
@@ -375,12 +389,12 @@ void thread_pool_running_logic(thread_pool_t* tp) {
 
     list_lock(tp->jobs_list);
     while (get_thread_pool_state(tp)==THREAD_POOL_RUNNING && (my_job = (job_t *) list_fetch_value(tp->jobs_list, 0)) == NULL) {
-        pthread_cond_wait(&(tp->job_is_empty), get_lock_reference(tp->jobs_list));
+        tp_pthread_cond_wait(&(tp->job_is_empty), get_lock_reference(tp->jobs_list));
     }
     list_unlock(tp->jobs_list);
     if(my_job!=NULL) {
         foo = my_job->start_routine;
-        result = foo(my_job->arg);//foo can not be NULL because init_job does not allow it
+        result = foo(my_job->arg);//foo cannot be NULL because init_job does not allow it
         set_future_result_and_state(my_job, result);
         tp_cond_broadcast(&(my_job->future->ready));
         destroy_job(my_job);
@@ -389,7 +403,9 @@ void thread_pool_running_logic(thread_pool_t* tp) {
 
 void* thread_wrapper(void* arg){
     thread_pool_t* tp=(thread_pool_t*)arg;
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	if(pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL)!=0){
+	    abort();
+	}
 
 	while(tp->state!=THREAD_POOL_STOPPED)
 	{
@@ -405,7 +421,7 @@ void* thread_wrapper(void* arg){
                 break;
 	    }
 	}
-    pthread_exit(NULL);//todo si potrebbe aggiungere un enumeratore con lo stato di uscita del thread
+    return NULL;
 }
 
 

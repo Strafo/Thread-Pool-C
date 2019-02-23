@@ -111,15 +111,11 @@ typedef struct _thread_pool thread_pool_t;
 /**
  * This function creates and initializes a "fixed size" thread pool.
  * @param size  number of threads to be created
- * @param attr  The attr argument points to a pthread_attr_t structure  +
- * whose  contents are  used  at  thread creation time to determine attributes for the new thread;
- * this structure is initialized  using  pthread_attr_init(3)  and related  functions.
- * If  attr is NULL, then the thread is created with default attributes.
  * Initial thread pool status is THREAD_POOL_PAUSED.
  * @return the  thread_pool's pointer
- * @return NUll if size<=0
+ * @return NULL if size<=0 or if malloc has failed(in the latter case errno is set).
  */
-thread_pool_t* create_fixed_size_thread_pool(int size,const pthread_attr_t *attr);
+thread_pool_t* create_fixed_size_thread_pool(int size);
 
 
 /**
@@ -134,8 +130,14 @@ void destroy_thread_pool(thread_pool_t* thread_pool);
  * THREAD POOL STATE
  * ************************************/
 
-
-/* enum for thread pool management*/
+/**
+ * @brief Thread Pool State
+ * THREAD_POOL_RUNNING:in this state the threadpool is consuming the tasks present in the task queue.
+ * THREAD_POOL_PAUSED:in this state thread pool threads are no longer drawing tasks from the task list.
+ * THREAD_POOL_STOPPED:in this state the threadpool is stopping.It is no longer possible to restart it.
+ *                      Use destroy_thread_pool () to free the memory.
+ * THREAD_POOL_ERROR:read the comment of the function get_thread_pool_state().
+ */
 enum thread_pool_state{
     THREAD_POOL_ERROR=-1,
     THREAD_POOL_STOPPED=0,
@@ -161,15 +163,20 @@ int pause_thread_pool(thread_pool_t* tp);
 
 
 /**
- *
+ * Set the threadpool passed in the state: THREAD_POOL_STOPPED.
+ * the function brutally interrupts the threadpool by deleting all its threads.
+ * This function does not wait for the threads to complete their current assigned task.
+ * Therefore,the termination of all the thread is guaranteed.
+ * After this function call the threadpool is unusable (use destroy_thread_pool () to free the memory)
  * @param thread_pool
+ * @return 0 if successful, -1 if tp is a null reference
  */
-int shut_down_now_thread_pool(thread_pool_t* thread_pool);//todo tobe implemented
+int shut_down_now_thread_pool(thread_pool_t* thread_pool);
 
 
 /**
  * Set the threadpool passed in the state: THREAD_POOL_STOPPED.
- * The function "gently" interrupts the threadpool by waiting for all threads to finish their tasks.
+ * The function "gently" interrupts the threadpool by waiting for all threads to finish their current tasks.
  * The termination of the function is not guaranteed if the threadpool threads remain blocked.
  * After this function call the threadpool is unusable (use destroy_thread_pool () to free the memory)
  * @param thread_pool
@@ -201,7 +208,7 @@ enum thread_pool_state get_thread_pool_state(thread_pool_t* tp);
  * @param start_routine the pointer to the function to be performed
  * @param arg the parameters to be passed to the function start_routine
  * @return returns a pointer to the future structure, which has as a payload a pointer to the return value of the function.
- * @return null if tp or start_routine are invalid pointers.
+ * @return null if tp or start_routine are invalid pointers;null is returned also if malloc has failed(in this case errno is set).
 */
 future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
 
@@ -212,7 +219,7 @@ future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
  * @param start_routine the pointer to the function to be performed
  * @param arg the parameters to be passed to the function start_routine
  * @return returns a pointer to the future structure, which has as a payload a pointer to the return value of the function.
- * @return null if tp or start_routine are invalid pointers.
+ * @return null if tp or start_routine are invalid pointers.null is returned also if malloc has failed(in this case errno is set).
 */
 future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
 
