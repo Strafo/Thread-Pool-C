@@ -231,7 +231,7 @@ future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
  * USAGE EXAMPLE
  * ************************************/
 /*
-Small program where a counter is incremented 1000 times via an add function passed to the Thread_pool.
+Small program where a counter is incremented NJOBS times via an add function passed to the Thread_pool.
 
 #include<stdio.h>
 #include<stdlib.h>
