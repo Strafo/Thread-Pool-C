@@ -113,7 +113,7 @@ typedef struct _thread_pool thread_pool_t;
  * @param size  number of threads to be created
  * Initial thread pool status is THREAD_POOL_PAUSED.
  * @return the  thread_pool's pointer
- * @return NUll if size<=0
+ * @return NULL if size<=0 or if malloc has failed(in the latter case errno is set).
  */
 thread_pool_t* create_fixed_size_thread_pool(int size);
 
@@ -202,7 +202,7 @@ enum thread_pool_state get_thread_pool_state(thread_pool_t* tp);
  * @param start_routine the pointer to the function to be performed
  * @param arg the parameters to be passed to the function start_routine
  * @return returns a pointer to the future structure, which has as a payload a pointer to the return value of the function.
- * @return null if tp or start_routine are invalid pointers.
+ * @return null if tp or start_routine are invalid pointers;null is returned also if malloc has failed(in this case errno is set).
 */
 future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
 
@@ -213,7 +213,7 @@ future_t* add_job_head(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
  * @param start_routine the pointer to the function to be performed
  * @param arg the parameters to be passed to the function start_routine
  * @return returns a pointer to the future structure, which has as a payload a pointer to the return value of the function.
- * @return null if tp or start_routine are invalid pointers.
+ * @return null if tp or start_routine are invalid pointers.null is returned also if malloc has failed(in this case errno is set).
 */
 future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg);
 

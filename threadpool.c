@@ -97,6 +97,10 @@ static inline void tp_cond_broadcast(pthread_cond_t* cond){
     if(pthread_cond_broadcast(cond)!=0){abort();}
 }
 
+static inline void tp_thread_attr_init(pthread_attr_t *attr){
+    if((pthread_attr_init(attr)!=0)||(pthread_attr_setdetachstate(attr,PTHREAD_CREATE_DETACHED)!=0)){abort();}
+}
+
 
 
 /**********************************FUTURE*********************************/
@@ -337,16 +341,12 @@ thread_pool_t* create_fixed_size_thread_pool(int size){//todo necessario refacto
 	//INIT THREADS
 	for(int i=0;i<tp->n_thread;i++){
 		tp->thread_list[i].thread_state=FREE_SLOT;
-		pthread_attr_init(&(tp->thread_list[i].attr));//todo chech result
-        pthread_attr_setdetachstate(&(tp->thread_list[i].attr),PTHREAD_CREATE_DETACHED);
-
+        tp_thread_attr_init(&(tp->thread_list[i].attr));
 	}
 
 	for(int i=0;i<tp->n_thread;i++){
 		if(pthread_create(&(tp->thread_list[i].thread_id),&(tp->thread_list[i].attr),thread_wrapper,(void*)tp)!=0){
-		    shut_down_thread_pool(tp);
-            destroy_thread_pool(tp);
-            break;
+		    abort();
 		}else{
 		    tp->thread_list[i].thread_state=INACTIVE;
 		}
