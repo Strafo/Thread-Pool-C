@@ -22,7 +22,7 @@ int thread_pool_tester_NOT_thread_safe(){
     int* result;
     future_t* res[njobs];
 
-    thread_pool_t* tp=create_fixed_size_thread_pool(nthread,NULL);
+    thread_pool_t* tp=create_fixed_size_thread_pool(nthread);
     start_thread_pool(tp);
 
     for(int i=0;i<njobs;i++)
