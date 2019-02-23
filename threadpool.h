@@ -111,10 +111,6 @@ typedef struct _thread_pool thread_pool_t;
 /**
  * This function creates and initializes a "fixed size" thread pool.
  * @param size  number of threads to be created
- * @param attr  The attr argument points to a pthread_attr_t structure  +//todo rimuovere attr ... viene initzializzato automaticamente
- * whose  contents are  used  at  thread creation time to determine attributes for the new thread;
- * this structure is initialized  using  pthread_attr_init(3)  and related  functions.
- * If  attr is NULL, then the thread is created with default attributes.
  * Initial thread pool status is THREAD_POOL_PAUSED.
  * @return the  thread_pool's pointer
  * @return NUll if size<=0
@@ -161,15 +157,20 @@ int pause_thread_pool(thread_pool_t* tp);
 
 
 /**
- *
+ * Set the threadpool passed in the state: THREAD_POOL_STOPPED.
+ * the function brutally interrupts the threadpool by deleting all its threads.
+ * This function does not wait for the threads to complete their current assigned task.
+ * Therefore,the termination of all the thread is guaranteed.
+ * After this function call the threadpool is unusable (use destroy_thread_pool () to free the memory)
  * @param thread_pool
+ * @return 0 if successful, -1 if tp is a null reference
  */
-int shut_down_now_thread_pool(thread_pool_t* thread_pool);//todo tobe implemented
+int shut_down_now_thread_pool(thread_pool_t* thread_pool);
 
 
 /**
  * Set the threadpool passed in the state: THREAD_POOL_STOPPED.
- * The function "gently" interrupts the threadpool by waiting for all threads to finish their tasks.
+ * The function "gently" interrupts the threadpool by waiting for all threads to finish their current tasks.
  * The termination of the function is not guaranteed if the threadpool threads remain blocked.
  * After this function call the threadpool is unusable (use destroy_thread_pool () to free the memory)
  * @param thread_pool
