@@ -22,7 +22,7 @@ void* add(void* counter) {
 
 void* print_hello_world(void * arg){
     printf("GOING TO SLEEP....");
-    sleep(20);
+    sleep(15);
     printf("HELLO WORLD!");
     return NULL;
 }
@@ -64,8 +64,8 @@ int thread_pool_tester_thread_safe(){
 	printf("FINAL result::%d\n",counter );
 	printf("END\n");
     assert(counter==1000000);
-    //assert(shut_down_thread_pool(tp)==0);
-    shut_down_now_thread_pool(tp);
+    assert(shut_down_thread_pool(tp)==0);
+    //shut_down_now_thread_pool(tp);
     future_get(res_h);
     assert(get_thread_pool_state(tp)==THREAD_POOL_STOPPED);
 	destroy_thread_pool(tp);

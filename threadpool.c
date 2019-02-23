@@ -416,7 +416,7 @@ void* thread_wrapper(void* arg){
                 break;
 	    }
 	}
-    pthread_exit(NULL);//todo si potrebbe aggiungere un enumeratore con lo stato di uscita del thread
+    return NULL;
 }
 
 
