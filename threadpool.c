@@ -202,7 +202,7 @@ job_t* init_job(void *(*start_routine)(void*),void *arg){
 
 int shut_down_now_thread_pool(thread_pool_t* tp){
     if(!tp)return -1;
-    shut_down_thread_pool(tp);////todo non va bene la chiamata a shut_down è bloccante (nuova utilizzo con detached)
+    shut_down_thread_pool(tp);////todo non va bene la chiamata a shut_down è bloccante (nuova utilizzo con detached).
     for(int i=0;i<tp->n_thread;i++){
         pthread_cancel(tp->thread_list[i].thread_id);
     }
