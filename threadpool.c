@@ -101,6 +101,9 @@ static inline void tp_thread_attr_init(pthread_attr_t *attr){
     if((pthread_attr_init(attr)!=0)||(pthread_attr_setdetachstate(attr,PTHREAD_CREATE_DETACHED)!=0)){abort();}
 }
 
+static inline void tp_pthread_cond_wait(pthread_cond_t * cond,pthread_mutex_t * mutex){//todo check restrinct meaning pthread_cond_t *restrict cond,pthread_mutex_t *restrict mutex
+    if(pthread_cond_wait(cond,mutex)!=0){abort();}
+}
 
 
 /**********************************FUTURE*********************************/
@@ -143,7 +146,7 @@ void* future_get(future_t* future){
     if(!future)return NULL;
     MUTEX_LOCK(future->mutex);
         while((future->is_ready)==FUTURE_UNREADY){
-            pthread_cond_wait(&(future->ready),&(future->mutex));
+            tp_pthread_cond_wait(&(future->ready),&(future->mutex));
         }
         res=future->result;
     MUTEX_UNLOCK(future->mutex);
@@ -212,8 +215,8 @@ int shut_down_now_thread_pool(thread_pool_t* tp){
     }
     for(int i=0;i<tp->n_thread;i++){
         if(tp->thread_list[i].thread_state!=FREE_SLOT) {
-            pthread_cancel(tp->thread_list[i].thread_id);
-            pthread_attr_destroy(&(tp->thread_list[i].attr));//todo check result
+            pthread_cancel(tp->thread_list[i].thread_id);//non gestisco l'errore... non so non mi pare il caso
+            pthread_attr_destroy(&(tp->thread_list[i].attr));//non gestisco l'errore... non so ...
             tp->thread_list[i].thread_state=FREE_SLOT;
         }
     }
@@ -227,7 +230,7 @@ int shut_down_thread_pool(thread_pool_t* tp){
     }
     for(int i=0;i<tp->n_thread;i++){
         if(tp->thread_list[i].thread_state!=FREE_SLOT) {
-            pthread_attr_destroy(&(tp->thread_list[i].attr));//todo check result
+            pthread_attr_destroy(&(tp->thread_list[i].attr));//non gestisco l'errore... non so non mi pare il caso
             tp->thread_list[i].thread_state=FREE_SLOT;
         }
     }
@@ -372,7 +375,7 @@ void destroy_thread_pool(thread_pool_t* thread_pool){
 void thread_pool_paused_logic(thread_pool_t* tp){
     MUTEX_LOCK(tp->mutex);
         while (tp->state == THREAD_POOL_PAUSED ) {
-            pthread_cond_wait(&(tp->thread_pool_paused), &(tp->mutex));
+            tp_pthread_cond_wait(&(tp->thread_pool_paused), &(tp->mutex));
         }
     MUTEX_UNLOCK(tp->mutex);
 }
@@ -386,7 +389,7 @@ void thread_pool_running_logic(thread_pool_t* tp) {
 
     list_lock(tp->jobs_list);
     while (get_thread_pool_state(tp)==THREAD_POOL_RUNNING && (my_job = (job_t *) list_fetch_value(tp->jobs_list, 0)) == NULL) {
-        pthread_cond_wait(&(tp->job_is_empty), get_lock_reference(tp->jobs_list));
+        tp_pthread_cond_wait(&(tp->job_is_empty), get_lock_reference(tp->jobs_list));
     }
     list_unlock(tp->jobs_list);
     if(my_job!=NULL) {
@@ -400,7 +403,9 @@ void thread_pool_running_logic(thread_pool_t* tp) {
 
 void* thread_wrapper(void* arg){
     thread_pool_t* tp=(thread_pool_t*)arg;
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	if(pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL)!=0){
+	    abort();
+	}
 
 	while(tp->state!=THREAD_POOL_STOPPED)
 	{
