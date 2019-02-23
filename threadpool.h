@@ -130,8 +130,14 @@ void destroy_thread_pool(thread_pool_t* thread_pool);
  * THREAD POOL STATE
  * ************************************/
 
-
-/* enum for thread pool management*/
+/**
+ * @brief Thread Pool State
+ * THREAD_POOL_RUNNING:in this state the threadpool is consuming the tasks present in the task queue.
+ * THREAD_POOL_PAUSED:in this state thread pool threads are no longer drawing tasks from the task list.
+ * THREAD_POOL_STOPPED:in this state the threadpool is stopping.It is no longer possible to restart it.
+ *                      Use destroy_thread_pool () to free the memory.
+ * THREAD_POOL_ERROR:read the comment of the function get_thread_pool_state().
+ */
 enum thread_pool_state{
     THREAD_POOL_ERROR=-1,
     THREAD_POOL_STOPPED=0,
