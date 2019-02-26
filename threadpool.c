@@ -141,7 +141,7 @@ enum future_state get_future_state(future_t* future){
 
 
 
-void* future_get(future_t* future){
+void* get_future(future_t *future){
     void* res;
     if(!future)return NULL;
     MUTEX_LOCK(future->mutex);

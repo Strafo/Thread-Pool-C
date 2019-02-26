@@ -45,7 +45,7 @@ int thread_pool_tester_thread_safe(){
     res_h=add_job_tail(tp,print_hello_world,NULL);
 
     for(int i=0;i<NJOBS;i++){
-		result=(int*)future_get(res[i]);
+		result=(int*) get_future(res[i]);
 		if(*result%1000==0&&*result>=1000){//serve per non stampare tutti gli output
 		    printf("%d\n",*result);
 		}
@@ -66,7 +66,7 @@ int thread_pool_tester_thread_safe(){
     assert(counter==1000000);
     assert(shut_down_thread_pool(tp)==0);
     //shut_down_now_thread_pool(tp);
-    future_get(res_h);
+	get_future(res_h);
     assert(get_thread_pool_state(tp)==THREAD_POOL_STOPPED);
 	destroy_thread_pool(tp);
 	return 0;

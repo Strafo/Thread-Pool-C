@@ -9,3 +9,7 @@ Thread-Pool-C:
   threadpool.h
   threadpool.c
   author:Andrea Straforini <andrea.straforini.97@gmail.com>
+
+
+minunit submodule:
+   https://github.com/siu/minunit.git
