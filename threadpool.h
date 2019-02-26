@@ -16,7 +16,7 @@ extern "C" {
 
 #include<stdlib.h>
 #include"linklist.h"
-#include<errno.h>
+#include<errno.h>//todo non dovrebbe servire
 #include<pthread.h>
 #include"atomic_defs.h"
 
@@ -70,7 +70,7 @@ void destroy_future(future_t* future );
 /**
  * Returns the status of the future.
  * The possible states of the object are expressed by the enumerator: future_state
- * @return future_state; FUTURE_ERROR if the future was a null reference.
+ * @return future_state; FUTURE_ERROR if the future is a null reference.
  */
 enum future_state get_future_state(future_t* future);
 
@@ -81,10 +81,10 @@ enum future_state get_future_state(future_t* future);
  * the operation BLOCKS the execution of the current thread until
  * the state of the object turns out to be of type: FUTURE_READY
  * @return the pointer to the payload.
- * @return  null pointer if the future past was invalid.
+ * @return  null pointer if the future passed is invalid.
  * @note the null return value could be the exact payload value and not an error!
  */
-void* future_get(future_t* future);
+void* get_future(future_t *future);
 
 
 
@@ -190,7 +190,7 @@ int shut_down_thread_pool(thread_pool_t* thread_pool);
  * @return the threadpool state {THREAD_POOL_STOPPED=0,THREAD_POOL_RUNNING=1,THREAD_POOL_PAUSED=2} if successful
  * @return THREAD_POOL_ERROR if tp is a null reference
  * @note Warning: the status reflects the threadpool situation during the function call.
- * It is not assured that after the call to the function the state remains in that particular situation.
+ * It is not assured that after the call to the function the state remains in that particular situation.//todo spiegare meglio
  */
 enum thread_pool_state get_thread_pool_state(thread_pool_t* tp);
 
@@ -271,17 +271,27 @@ int main(){
 
     if(!(tp=create_fixed_size_thread_pool(NTHREAD,NULL)))return EXIT_FAILURE;
     start_thread_pool(tp);
+
+
     //adding the tasks to the list
+
     for(int i=0;i<NJOBS;i++) {
         add_res[i]=add_job_head(tp, add, &counter);
     }
     future=add_job_tail(tp,create_string,NULL);
+
+
+
     //waiting for the termination of the tasks
+
     for(int i=0;i<NJOBS;i++){
         future_get(add_res[i]);
         destroy_future(add_res[i]);
     }
-    string=(char*)future_get(future);
+    string=(char*)get_future(future);
+
+
+    //checking results
     assert(counter==NJOBS);
     assert(shut_down_thread_pool(tp)==0);
     assert(get_thread_pool_state(tp)==THREAD_POOL_STOPPED);
