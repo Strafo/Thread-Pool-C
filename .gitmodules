@@ -1,3 +1,4 @@
-[submodule "minunit"]
-	path = minunit
+[submodule "test/minunit"]
+	path = test/minunit
 	url = https://github.com/siu/minunit.git
+	branch = master
