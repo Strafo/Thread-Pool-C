@@ -1,4 +1,6 @@
-[submodule "test/minunit"]
-	path = test/minunit
+[submodule "src/libhl"]
+	path = src/libhl
+	url = https://github.com/xant/libhl.git
+[submodule "test/minunitdir"]
+	path = test/minunitdir
 	url = https://github.com/siu/minunit.git
-	branch = master
