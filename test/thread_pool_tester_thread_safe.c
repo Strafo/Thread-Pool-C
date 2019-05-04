@@ -2,7 +2,8 @@
 #include<unistd.h>
 #include<stdlib.h>
 #include <assert.h>
-#include"threadpool.h"
+#include "../src/threadpool.h"
+
 #define NJOBS 1000000
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 

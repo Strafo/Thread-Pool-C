@@ -3,7 +3,7 @@
 //
 #include<errno.h>
 #include "minunit.h"
-#include "threadpool.h"
+#include "../src/threadpool.h"
 
 thread_pool_t* threadPool;
 int res,i,size;

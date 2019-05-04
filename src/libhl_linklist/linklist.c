@@ -61,13 +61,14 @@ static inline int move_entry(linked_list_t *list, size_t srcPos, size_t dstPos);
 static inline list_entry_t *subst_entry(linked_list_t *list, size_t pos, list_entry_t *entry);
 static inline int swap_entries(linked_list_t *list, size_t pos1, size_t pos2);
 
-#ifdef  THREAD_SAFE
+
+
 pthread_mutex_t*
 get_lock_reference(linked_list_t *list){
     if(!list)return NULL;
     return &(list->lock);
 }
-#endif
+
 
 /*
  * Create a new linked_list_t. Allocates resources and returns
@@ -206,6 +207,11 @@ static inline
 list_entry_t *create_entry()
 {
     list_entry_t *new_entry = (list_entry_t *)calloc(1, sizeof(list_entry_t));
+    /*
+    if (!new_entry) {
+        fprintf(stderr, "Can't create new entry: %s", strerror(errno));
+    }
+    */
     return new_entry;
 }
 
@@ -754,9 +760,9 @@ list_foreach_value(linked_list_t *list, int (*item_handler)(void *item, size_t i
 {
     MUTEX_LOCK(list->lock);
     slice_t slice = {
-            .list = list,
-            .offset = 0,
-            .length = list->length
+        .list = list,
+        .offset = 0,
+        .length = list->length
     };
     MUTEX_UNLOCK(list->lock);
     return slice_foreach_value(&slice, item_handler, user);
@@ -927,7 +933,7 @@ list_unshift_tagged_value(linked_list_t *list, tagged_value_t *tval)
     {
         new_entry = create_entry();
         if(new_entry)
-        {
+         {
             new_entry->tagged = 1;
             new_entry->value = tval;
             res = unshift_entry(list, new_entry);
@@ -1038,10 +1044,10 @@ swap_entry_node_val(list_entry_t *p1, list_entry_t *p2)
 
 static inline void
 list_quick_sort(list_entry_t *head,
-                list_entry_t *tail,
-                list_entry_t *pivot,
-                int length,
-                list_comparator_callback_t comparator)
+               list_entry_t *tail,
+               list_entry_t *pivot,
+               int length,
+               list_comparator_callback_t comparator)
 {
     if (!head || !tail || !pivot || length < 2 || !comparator) return;
 
@@ -1217,7 +1223,7 @@ slice_destroy(slice_t *slice)
         }
         prev = cur;
         cur = cur->next;
-    }
+    }    
     free(slice);
 }
 

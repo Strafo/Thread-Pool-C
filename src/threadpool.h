@@ -15,10 +15,8 @@ extern "C" {
 #endif
 
 #include<stdlib.h>
-#include"linklist.h"
-#include<errno.h>//todo non dovrebbe servire
 #include<pthread.h>
-#include"atomic_defs.h"
+
 
 
 /************************************************************************
@@ -226,7 +224,8 @@ future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
 
 
 
-#ifdef _cplusplus
+
+#ifdef __cplusplus
 }
 #endif
 
@@ -234,7 +233,7 @@ future_t* add_job_tail(thread_pool_t* tp,void *(*start_routine)(void*),void *arg
 
 
 
-/***************************************
+/* **************************************
  * USAGE EXAMPLE
  * ************************************/
 /*

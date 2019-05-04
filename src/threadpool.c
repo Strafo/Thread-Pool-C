@@ -1,4 +1,6 @@
 #include"threadpool.h"
+#include"libhl_linklist/linklist.h"
+#include"libhl_linklist/atomic_defs.h"
 
 //todo aggiungere codice per settare campo state del thread
 enum _thread_state{
@@ -365,7 +367,6 @@ void destroy_thread_pool(thread_pool_t* thread_pool){
 	list_destroy(thread_pool ->jobs_list);
     free(thread_pool ->thread_list);
     free(thread_pool);
-    thread_pool=NULL;
 }
 
 
