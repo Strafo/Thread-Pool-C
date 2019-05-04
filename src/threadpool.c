@@ -1,6 +1,6 @@
 #include"threadpool.h"
-#include "libhl/src/linklist.h"
-#include "libhl/src/atomic_defs.h"
+#include"libhl_linklist/linklist.h"
+#include"libhl_linklist/atomic_defs.h"
 
 //todo aggiungere codice per settare campo state del thread
 enum _thread_state{
