@@ -9,17 +9,17 @@ set(MINUNIT minunitdir/minunit.h )
 
 add_executable(ThreadPoolThreadSafeTest thread_pool_tester_thread_safe.c )
 target_link_libraries (ThreadPoolThreadSafeTest
-        ThreadPoolLib
+        ThreadPool
         )
 
 add_executable(ThreadPoolNotThreadSafeTest thread_pool_tester_NOT_thread_safe.c )
 target_link_libraries (ThreadPoolNotThreadSafeTest
-        ThreadPoolLib
+        ThreadPool
         )
 
 add_executable(ThreadPoolUnitTest thread_pool_unit_tests.c  ${MINUNIT})
 target_link_libraries (ThreadPoolUnitTest
-        ThreadPoolLib
+        ThreadPool
         )
 
 
